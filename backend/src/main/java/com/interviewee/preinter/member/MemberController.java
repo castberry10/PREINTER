@@ -2,7 +2,6 @@ package com.interviewee.preinter.member;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,6 +13,7 @@ public class MemberController {
 
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
+
 
     @GetMapping("/register")
     String register(Authentication auth) {
