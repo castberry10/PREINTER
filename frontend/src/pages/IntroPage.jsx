@@ -11,7 +11,7 @@ const IntroPage = () => {
     <div>
 		  <IntroPageBlock>
 			  인트로<br/>
-			  
+			  <div>면접보기</div>
 		  </IntroPageBlock>
 	 </div>
   );
