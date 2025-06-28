@@ -9,14 +9,14 @@ const IntroPageBlock = styled.div`
 const IntroPage = () => {
 	const navigate = useNavigate();
 
-	const handleClick = () => {
-		navigate('/about');
+	const goInterviewClick = () => {
+		navigate('/interview/setup');
 	};
 	return (
 		<div>
 			<IntroPageBlock>
 				인트로<br/>
-				<div>면접보기</div>
+				<div onClick={goInterviewClick}>면접보기</div>
 			</IntroPageBlock>
 		</div>
 	);
