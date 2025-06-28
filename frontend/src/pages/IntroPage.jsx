@@ -1,20 +1,25 @@
 import React from 'react';
 
 import styled from 'styled-components';
-
+import { Link, useNavigate } from 'react-router-dom';
 const IntroPageBlock = styled.div`
 
 `;
 
 const IntroPage = () => {
-  return (
-    <div>
-		  <IntroPageBlock>
-			  인트로<br/>
-			  <div>면접보기</div>
-		  </IntroPageBlock>
-	 </div>
-  );
+	const navigate = useNavigate();
+
+	const handleClick = () => {
+		navigate('/about');
+	};
+	return (
+		<div>
+			<IntroPageBlock>
+				인트로<br/>
+				<div>면접보기</div>
+			</IntroPageBlock>
+		</div>
+	);
 };
 
 export default IntroPage;
