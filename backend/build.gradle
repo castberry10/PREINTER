@@ -33,6 +33,8 @@ dependencies {
 	implementation "com.openai:openai-java:2.10.0"
 	implementation "com.openai:openai-java-client-okhttp:2.10.0"
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9'
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+	implementation 'org.springframework.session:spring-session-data-redis'
 }
 
 tasks.named('test') {
