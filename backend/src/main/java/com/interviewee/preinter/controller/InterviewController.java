@@ -2,12 +2,10 @@ package com.interviewee.preinter.controller;
 
 import com.interviewee.preinter.dto.request.*;
 import com.interviewee.preinter.dto.response.*;
-import com.interviewee.preinter.service.InterviewService;
+import com.interviewee.preinter.interview.InterviewService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/interview")

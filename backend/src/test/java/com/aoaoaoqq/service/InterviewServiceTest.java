@@ -1,62 +1,76 @@
 package com.aoaoaoqq.service;
 
-import com.interviewee.preinter.dto.*;
+import com.interviewee.preinter.Application;
+import com.interviewee.preinter.document.DocumentService;
+import com.interviewee.preinter.dto.request.GetNextQuestionRequest;
+import com.interviewee.preinter.dto.request.GetResultRequest;
+import com.interviewee.preinter.dto.request.StartInterviewRequest;
+import com.interviewee.preinter.dto.request.SubmitAnswerRequest;
+import com.interviewee.preinter.dto.response.GetNextQuestionResponse;
+import com.interviewee.preinter.dto.response.GetResultResponse;
+import com.interviewee.preinter.dto.response.StartInterviewResponse;
+import com.interviewee.preinter.dto.response.SubmitAnswerResponse;
+import com.interviewee.preinter.interview.InterviewService;
 import com.interviewee.preinter.openai.ChatService;
-import com.interviewee.preinter.service.InterviewService;
-import org.junit.jupiter.api.BeforeEach;
+import com.interviewee.preinter.repository.InterviewSessionRepository;
+import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 
+@SpringBootTest(classes = Application.class)
+@Transactional
 class InterviewServiceTest {
+    @Autowired
+    private InterviewService service;
 
-//    private ChatService mockChatService;
-//    private InterviewService service;
-//
-//    @BeforeEach
-//    void setUp() {
-//        mockChatService = mock(ChatService.class);
-//        service = new InterviewService(mockChatService);
-//    }
-//
-//    @Test
-//    void fullInterviewFlow_shouldWork() {
-//        // 1) 시작
-//        InterviewStartRequest startReq = new InterviewStartRequest();
-//        startReq.setResume("이력서 내용");
-//        UUID id = service.startInterview(startReq).getInterviewId();
-//
-//        // 2) 첫 질문
-//        when(mockChatService.ask(contains("첫 질문")))
-//                .thenReturn("첫 질문 내용");
-//        QuestionResponse q1 = service.getNextQuestion(id);
-//        assertThat(q1.getQuestion()).isEqualTo("첫 질문 내용");
-//
-//        // 3) 첫 답변
-//        AnswerRequest ans1 = new AnswerRequest();
-//        ans1.setQuestionNumber(q1.getQuestionNumber());
-//        ans1.setAnswer("답변1");
-//        service.submitAnswer(id, ans1);
-//
-//        // 4) 두번째 질문
-//        when(mockChatService.ask(contains("대화 기록")))
-//                .thenReturn("두번째 질문 내용");
-//        QuestionResponse q2 = service.getNextQuestion(id);
-//        assertThat(q2.getQuestion()).isEqualTo("두번째 질문 내용");
-//
-//        // 5) 두번째 답변
-//        AnswerRequest ans2 = new AnswerRequest();
-//        ans2.setQuestionNumber(q2.getQuestionNumber());
-//        ans2.setAnswer("답변2");
-//        service.submitAnswer(id, ans2);
-//
-//        // 6) 최종 평가
-//        when(mockChatService.ask(contains("이력서를 참고")))
-//                .thenReturn("종합 평가 결과");
-//        ResultResponse result = service.getResult(id);
-//        assertThat(result.getResultSummary()).isEqualTo("종합 평가 결과");
-//    }
+    @Autowired
+    private InterviewSessionRepository repo;
+
+    @MockitoBean
+    private DocumentService documentService;
+
+    @MockitoBean
+    private ChatService chatService;
+
+    @Test
+    void testFullInterviewFlow_andPrintSessionState() throws Exception {
+        // 목(mock) 동작 정의
+        when(documentService.extractText(any())).thenReturn("이력서 텍스트");
+        when(chatService.ask(anyString())).thenReturn("첫 질문입니다.");
+        when(chatService.askEvaluation(any())).thenReturn("최종 요약입니다.");
+
+        // 1) 인터뷰 시작
+        MockMultipartFile resume = new MockMultipartFile(
+                "resumeFile", "resume.txt", "text/plain", "경력 내용".getBytes()
+        );
+        StartInterviewResponse startResp = service.startInterview(new StartInterviewRequest(resume));
+        System.out.println("[After startInterview] " + repo.findById(startResp.getSessionId()).orElse(null));
+
+        // 2) 다음 질문 요청
+        GetNextQuestionResponse qResp = service.getNextQuestion(
+                new GetNextQuestionRequest(startResp.getSessionId())
+        );
+        System.out.println("[After getNextQuestion] " + repo.findById(startResp.getSessionId()).orElse(null));
+
+        // 3) 답변 제출
+        SubmitAnswerResponse ansResp = service.submitAnswer(
+                new SubmitAnswerRequest(startResp.getSessionId(), 1, "제 답변입니다.")
+        );
+        System.out.println("[After submitAnswer] " + repo.findById(startResp.getSessionId()).orElse(null));
+
+        // 4) 결과 요청
+        GetResultResponse resultResp = service.getResult(
+                new GetResultRequest(startResp.getSessionId())
+        );
+        System.out.println("[After getResult - finished] " + repo.findById(startResp.getSessionId()).orElse(null).getHistory());
+    }
 }

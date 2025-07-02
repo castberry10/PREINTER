@@ -1,13 +1,7 @@
 package com.aoaoaoqq.service;
 
 import com.interviewee.preinter.Application;
-import com.interviewee.preinter.dto.*;
-import com.interviewee.preinter.service.InterviewService;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

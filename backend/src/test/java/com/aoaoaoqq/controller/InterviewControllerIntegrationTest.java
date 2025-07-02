@@ -1,7 +1,6 @@
 package com.aoaoaoqq.controller;
 
 import com.interviewee.preinter.Application;
-import com.interviewee.preinter.dto.*;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

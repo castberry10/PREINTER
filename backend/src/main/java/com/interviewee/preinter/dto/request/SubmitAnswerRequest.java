@@ -9,4 +9,10 @@ public class SubmitAnswerRequest {
     private String sessionId;
     private int questionNumber;
     private String answer;
+
+    public SubmitAnswerRequest(String sessionId, int questionNumber, String answer) {
+        this.sessionId = sessionId;
+        this.questionNumber = questionNumber;
+        this.answer = answer;
+    }
 }

@@ -1,9 +1,8 @@
-package com.interviewee.preinter.service;
+package com.interviewee.preinter.interview;
 
 import jakarta.persistence.Id;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import org.springframework.data.redis.core.RedisHash;
 
 import java.io.Serializable;

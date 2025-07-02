@@ -1,16 +1,7 @@
 package com.aoaoaoqq.controller;
 
-import com.interviewee.preinter.openai.ChatService;
-import com.interviewee.preinter.service.InterviewService;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.util.UUID;
-
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class InterviewControllerTest {
 //    private ChatService mockChat;

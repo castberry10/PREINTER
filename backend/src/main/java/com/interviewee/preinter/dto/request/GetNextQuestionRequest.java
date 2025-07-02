@@ -7,4 +7,8 @@ import lombok.Setter;
 @Setter
 public class GetNextQuestionRequest {
     private String sessionId;
+
+    public GetNextQuestionRequest(String sessionId) {
+        this.sessionId = sessionId;
+    }
 }
