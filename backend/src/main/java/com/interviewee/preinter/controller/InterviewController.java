@@ -28,7 +28,12 @@ public class InterviewController {
     public ResponseEntity<GetNextQuestionResponse> getNextQuestion(
             @RequestBody GetNextQuestionRequest request
     ) {
-        GetNextQuestionResponse response = interviewService.getNextQuestion(request);
+        GetNextQuestionResponse response;
+        if (interviewService.getQuestionCount(request.getSessionId()) == 0) {
+            response = interviewService.getFirstQuestion(request);
+        } else {
+            response = interviewService.getNextQuestion(request);
+        }
         return ResponseEntity.ok(response);
     }
 

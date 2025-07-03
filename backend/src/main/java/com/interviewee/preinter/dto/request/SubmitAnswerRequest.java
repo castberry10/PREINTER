@@ -7,12 +7,10 @@ import lombok.Setter;
 @Setter
 public class SubmitAnswerRequest {
     private String sessionId;
-    private int questionNumber;
     private String answer;
 
-    public SubmitAnswerRequest(String sessionId, int questionNumber, String answer) {
+    public SubmitAnswerRequest(String sessionId, String answer) {
         this.sessionId = sessionId;
-        this.questionNumber = questionNumber;
         this.answer = answer;
     }
 }

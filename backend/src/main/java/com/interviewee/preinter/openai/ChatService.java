@@ -4,8 +4,8 @@ import com.interviewee.preinter.interview.InterviewSession;
 import com.openai.client.OpenAIClient;
 import com.openai.client.okhttp.OpenAIOkHttpClient;
 import com.openai.models.ChatModel;
-import com.openai.models.chat.completions.ChatCompletion;
-import com.openai.models.chat.completions.ChatCompletionCreateParams;
+import com.openai.models.chat.completions.*;
+import com.openai.models.evals.runs.RunListResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -16,7 +16,7 @@ import java.util.List;
 public class ChatService {
     private final OpenAIClient client;
 
-    // 면접 질문
+    // 면접 첫 질문
     public String ask(String prompt) {
         ChatCompletionCreateParams params = ChatCompletionCreateParams.builder()
                 .model(ChatModel.GPT_4O_MINI)
@@ -24,6 +24,47 @@ public class ChatService {
                 .addUserMessage(prompt)
                 .build();
 
+        ChatCompletion resp = client
+                .chat()
+                .completions()
+                .create(params);
+
+        return resp
+                .choices()
+                .get(0)
+                .message()
+                .content()
+                .orElseThrow(() -> new IllegalStateException("GPT 응답이 없습니다."));
+    }
+    // 다음 질문
+    public String askWithHistory(InterviewSession session) {
+        ChatCompletionCreateParams.Builder b = ChatCompletionCreateParams.builder()
+                .model(ChatModel.GPT_4O_MINI)
+                // 인터뷰어 역할 고정
+                .addSystemMessage("당신은 면접관입니다.")
+                // (원한다면) 이력서도 한 번 첨부
+                .addUserMessage(session.getResumeText());
+
+        // 이전 질문·답변 히스토리 쌓기
+        List<String> history = session.getHistory();
+        for (int i = 0; i < history.size(); i++) {
+            String msg = history.get(i);
+            if (i % 2 == 0) {
+                // 짝수 인덱스: 과거에 면접관(Assistant)이 던진 질문
+                b.addMessage(ChatCompletionAssistantMessageParam.builder().content(msg).build());
+            }
+            else {
+                // 홀수 인덱스: 지원자(User)의 답변
+                b.addUserMessage(msg);
+            }
+        }
+
+        // 마지막으로, 새 질문을 요청하는 프롬프트
+        String systemPrompt = "다음 면접 질문을 제시해 주세요.";
+        b.addSystemMessage(systemPrompt);
+
+        // 빌드 & 호출
+        ChatCompletionCreateParams params = b.build();
         ChatCompletion resp = client
                 .chat()
                 .completions()
@@ -48,7 +89,7 @@ public class ChatService {
         List<String> tmpList = session.getHistory();
         for (int i = 0; i < tmpList.size(); i++) {
             if (i % 2 == 0) {
-                b.addSystemMessage(tmpList.get(i));
+                b.addMessage(ChatCompletionAssistantMessageParam.builder().content(tmpList.get(i)).build());
             } else {
                 b.addUserMessage(tmpList.get(i));
             }

@@ -23,6 +23,10 @@ public class InterviewService {
     private final DocumentService documentService;
     private final InterviewSessionRepository repo;
 
+    public int getQuestionCount(String sessionId) {
+        return repo.findById(sessionId).orElse(null).getQuestionCount();
+    }
+
     /** 1) 인터뷰 시작 */
     public StartInterviewResponse startInterview(StartInterviewRequest req) {
         String sessionId = UUID.randomUUID().toString();
@@ -34,8 +38,8 @@ public class InterviewService {
         return new StartInterviewResponse(sessionId);
     }
 
-    /** 2) 다음 질문 요청 */
-    public GetNextQuestionResponse getNextQuestion(GetNextQuestionRequest req) {
+    /** 2) 첫 질문 요청 */
+    public GetNextQuestionResponse getFirstQuestion(GetNextQuestionRequest req) {
         InterviewSession session = repo.findById(req.getSessionId())
                 .orElseThrow(() -> new IllegalArgumentException("Invalid session: " + req.getSessionId()));
         if (session.isFinished()) {
@@ -61,7 +65,23 @@ public class InterviewService {
         return new SubmitAnswerResponse("OK");
     }
 
-    /** 4) 결과(요약) 요청 */
+    /** 4) 다음 질문 요청 */
+    public GetNextQuestionResponse getNextQuestion(GetNextQuestionRequest req) {
+        InterviewSession session = repo.findById(req.getSessionId())
+                .orElseThrow(() -> new IllegalArgumentException("Invalid session: " + req.getSessionId()));
+        if (session.isFinished()) {
+            return new GetNextQuestionResponse(null, true);
+        }
+
+        // ChatGPT에 질문 생성 요청
+        String question = chatService.askWithHistory(session);
+
+        session.recordQuestion(question);
+        repo.save(session);
+
+        return new GetNextQuestionResponse(question, false);
+    }
+    /** 5) 결과(요약) 요청 */
     public GetResultResponse getResult(GetResultRequest req) {
         InterviewSession session = repo.findById(req.getSessionId())
                 .orElseThrow(() -> new IllegalArgumentException("Invalid session: " + req.getSessionId()));

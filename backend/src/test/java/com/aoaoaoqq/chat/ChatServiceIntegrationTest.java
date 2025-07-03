@@ -26,5 +26,6 @@ public class ChatServiceIntegrationTest {
         assertThat(resp)
                 .isNotBlank()
                 .contains("안녕하세요");
+        System.out.println("resp = " + resp);
     }
 }
