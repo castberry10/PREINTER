@@ -6,6 +6,7 @@ import com.openai.models.chat.completions.ChatCompletion;
 import com.openai.models.chat.completions.ChatCompletionCreateParams;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.List;
 import java.util.Optional;
@@ -48,4 +49,8 @@ class ChatServiceTest {
         String result = chatService.ask("테스트 질문");
         assertThat(result).isEqualTo("응답내용");
     }
+
+
+
+
 }
