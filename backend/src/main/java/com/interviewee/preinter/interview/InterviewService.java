@@ -68,7 +68,7 @@ public class InterviewService {
 
 
     /** 4) 결과(요약) 요청 */
-    public GetResultResponse getResult(GetResultRequest req) {
+    public GetResultResponse getResult(GetResultRequest req) throws JsonProcessingException {
         InterviewSession session = repo.findById(req.getSessionId())
                 .orElseThrow(() -> new IllegalArgumentException("Invalid session: " + req.getSessionId()));
         session.finish();

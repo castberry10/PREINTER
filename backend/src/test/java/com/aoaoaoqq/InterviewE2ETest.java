@@ -7,6 +7,7 @@ import com.interviewee.preinter.dto.request.GetResultRequest;
 import com.interviewee.preinter.dto.request.StartInterviewRequest;
 import com.interviewee.preinter.dto.request.SubmitAnswerRequest;
 import com.interviewee.preinter.dto.response.GetResultResponse;
+import com.interviewee.preinter.dto.response.SubmitAnswerResponse;
 import com.interviewee.preinter.interview.InterviewService;
 import com.interviewee.preinter.openai.ChatService;
 import com.interviewee.preinter.repository.InterviewSessionRepository;
@@ -132,7 +133,7 @@ public class InterviewE2ETest {
         System.out.println("[Q1] " + q1);
 
         // 6) 답변
-        service.submitAnswer(new SubmitAnswerRequest(sessionId,"답변1"));
+        service.submitAnswer(new SubmitAnswerRequest(sessionId, "저는 풀업이 가장 좋은 운동이라고 생각합니다."));
 
         // 7) 두 번째 질문
         String q2 = service
@@ -141,7 +142,7 @@ public class InterviewE2ETest {
         System.out.println("[Q2] " + q2);
 
         // 8) 답변
-        service.submitAnswer(new SubmitAnswerRequest(sessionId,"답변2"));
+        service.submitAnswer(new SubmitAnswerRequest(sessionId,"저는 회원을 최고로 중요하게 생각하여, 회사에 이바지 하겠습니다."));
 
         // 9) 최종 평가
         GetResultResponse result = service.getResult(new GetResultRequest(sessionId));

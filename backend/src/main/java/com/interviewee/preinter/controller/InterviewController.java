@@ -49,7 +49,7 @@ public class InterviewController {
     @PostMapping("/result")
     public ResponseEntity<GetResultResponse> getResult(
             @RequestBody GetResultRequest request
-    ) {
+    ) throws JsonProcessingException {
         GetResultResponse response = interviewService.getResult(request);
         return ResponseEntity.ok(response);
     }
