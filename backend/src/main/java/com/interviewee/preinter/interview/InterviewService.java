@@ -47,7 +47,7 @@ public class InterviewService {
         }
 
         // ChatGPT에 질문 생성 요청
-        String prompt = session.nextPrompt();
+        String prompt = session.getResumeText();
         String question = chatService.ask(prompt);
 
         session.recordQuestion(question);

@@ -26,16 +26,6 @@ public class InterviewSession implements Serializable {
         this.resumeText = resumeText;
     }
 
-    public String nextPrompt() {
-        // Implement logic to generate the next prompt based on history or resumeText
-        return "Next prompt based on resume or history.";
-    }
-
-    public String evalPrompt() {
-        // Implement logic to generate an evaluation prompt based on history
-        return "Evaluation prompt based on interview session.";
-    }
-
     public void recordQuestion(String question) {
         history.add("Q: " + question);
         questionCount++;
