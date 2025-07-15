@@ -1,5 +1,6 @@
 package com.interviewee.preinter.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.interviewee.preinter.dto.request.*;
 import com.interviewee.preinter.dto.response.*;
 import com.interviewee.preinter.interview.InterviewService;
@@ -27,13 +28,11 @@ public class InterviewController {
     @PostMapping("/question")
     public ResponseEntity<GetNextQuestionResponse> getNextQuestion(
             @RequestBody GetNextQuestionRequest request
-    ) {
+    ) throws JsonProcessingException {
         GetNextQuestionResponse response;
-        if (interviewService.getQuestionCount(request.getSessionId()) == 0) {
-            response = interviewService.getFirstQuestion(request);
-        } else {
-            response = interviewService.getNextQuestion(request);
-        }
+
+        response = interviewService.getNextQuestion(request);
+
         return ResponseEntity.ok(response);
     }
 

@@ -39,7 +39,7 @@ class InterviewServiceTest {
         // 목(mock) 동작 정의
         when(documentService.extractText(any())).thenReturn("이력서 텍스트");
         when(chatService.summarize(any())).thenReturn("이력서 텍스트");
-        when(chatService.ask(anyString())).thenReturn("첫 질문입니다.");
+        when(chatService.askWithHistory(any())).thenReturn("첫 질문입니다.");
         when(chatService.askWithHistory(any())).thenReturn("두번째 질문입니다.");
         when(chatService.askEvaluation(any())).thenReturn("최종 요약입니다.");
 
@@ -50,7 +50,7 @@ class InterviewServiceTest {
         StartInterviewResponse startResp = service.startInterview(new StartInterviewRequest(resume));
 
         // 2) 다음 질문 요청
-        GetNextQuestionResponse q1Resp = service.getFirstQuestion(
+        GetNextQuestionResponse q1Resp = service.getNextQuestion(
                 new GetNextQuestionRequest(startResp.getSessionId())
         );
 

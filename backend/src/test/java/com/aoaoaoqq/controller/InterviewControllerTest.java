@@ -63,7 +63,7 @@ public class InterviewControllerTest {
     void getNextQuestion() throws Exception {
         GetNextQuestionRequest req = new GetNextQuestionRequest("sess-123");
         GetNextQuestionResponse resp = new GetNextQuestionResponse("질문입니다", false);
-        when(interviewService.getFirstQuestion(any(GetNextQuestionRequest.class))).thenReturn(resp);
+        when(interviewService.getNextQuestion(any(GetNextQuestionRequest.class))).thenReturn(resp);
 
         mockMvc.perform(post("/api/interview/question")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -72,7 +72,7 @@ public class InterviewControllerTest {
                 .andExpect(jsonPath("$.question").value("질문입니다"))
                 .andExpect(jsonPath("$.interviewEnded").value(false));
 
-        verify(interviewService).getFirstQuestion(any(GetNextQuestionRequest.class));
+        verify(interviewService).getNextQuestion(any(GetNextQuestionRequest.class));
     }
 
     @Test

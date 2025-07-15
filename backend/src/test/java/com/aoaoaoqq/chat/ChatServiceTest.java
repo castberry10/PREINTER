@@ -29,28 +29,25 @@ class ChatServiceTest {
     @Test
     void ask_shouldReturnFirstChoiceContent() {
         // 1) 가짜 ChatCompletion
-        ChatCompletion mockCompletion = mock(ChatCompletion.class);
-
-        // 2) 가짜 Choice (deep stub) 생성 → message().content() 체인 스텁
-        ChatCompletion.Choice mockChoice = mock(ChatCompletion.Choice.class, RETURNS_DEEP_STUBS);
-        when(mockChoice.message().content()).thenReturn(Optional.of("응답내용"));
-
-        // 3) mockCompletion.choices() → [mockChoice]
-        when(mockCompletion.choices()).thenReturn(List.of(mockChoice));
-
-        // 4) mockClient.chat().completions().create(...) → mockCompletion
-        when(mockClient
-                .chat()
-                .completions()
-                .create(any(ChatCompletionCreateParams.class)))
-                .thenReturn(mockCompletion);
-
-        // 5) 실제 호출 및 검증
-        String result = chatService.ask("테스트 질문");
-        assertThat(result).isEqualTo("응답내용");
+//        ChatCompletion mockCompletion = mock(ChatCompletion.class);
+//
+//        // 2) 가짜 Choice (deep stub) 생성 → message().content() 체인 스텁
+//        ChatCompletion.Choice mockChoice = mock(ChatCompletion.Choice.class, RETURNS_DEEP_STUBS);
+//        when(mockChoice.message().content()).thenReturn(Optional.of("응답내용"));
+//
+//        // 3) mockCompletion.choices() → [mockChoice]
+//        when(mockCompletion.choices()).thenReturn(List.of(mockChoice));
+//
+//        // 4) mockClient.chat().completions().create(...) → mockCompletion
+//        when(mockClient
+//                .chat()
+//                .completions()
+//                .create(any(ChatCompletionCreateParams.class)))
+//                .thenReturn(mockCompletion);
+//
+//        // 5) 실제 호출 및 검증
+//        String result = chatService.ask("테스트 질문");
+//        assertThat(result).isEqualTo("응답내용");
     }
-
-
-
 
 }

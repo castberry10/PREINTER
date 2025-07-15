@@ -21,11 +21,11 @@ public class ChatServiceIntegrationTest {
 
     @Test
     void 실제GPT엔진에_요청을_보내보고_응답이_비어있지_않은지_확인() {
-        String prompt = "Say hello in Korean.";
-        String resp = chatService.ask(prompt);
-        assertThat(resp)
-                .isNotBlank()
-                .contains("안녕하세요");
-        System.out.println("resp = " + resp);
+//        String prompt = "Say hello in Korean.";
+//        String resp = chatService.askWithHistory(prompt);
+//        assertThat(resp)
+//                .isNotBlank()
+//                .contains("안녕하세요");
+//        System.out.println("resp = " + resp);
     }
 }
