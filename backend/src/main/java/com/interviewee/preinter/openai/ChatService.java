@@ -127,7 +127,7 @@ public class ChatService {
         );
 
         ChatCompletionCreateParams.Builder b = ChatCompletionCreateParams.builder()
-                .model(ChatModel.GPT_4O_MINI)
+                .model(ChatModel.O4_MINI)
                 .addSystemMessage("넌 인터뷰를 진행하는 인사담당자야. ")
                 // 이력서는 한 번만
                 .addUserMessage(prompt);
