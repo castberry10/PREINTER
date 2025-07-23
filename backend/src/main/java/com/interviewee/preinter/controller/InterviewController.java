@@ -4,9 +4,16 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.interviewee.preinter.dto.request.*;
 import com.interviewee.preinter.dto.response.*;
 import com.interviewee.preinter.interview.InterviewService;
+import com.interviewee.preinter.speech.GoogleSttService;
+import com.interviewee.preinter.speech.GoogleTtsService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/interview")
@@ -14,6 +21,8 @@ import org.springframework.web.bind.annotation.*;
 public class InterviewController {
 
     private final InterviewService interviewService;
+    private final GoogleTtsService ttsService;
+    private final GoogleSttService sttService;
 
     /** 1) 인터뷰 시작 */
     @PostMapping("/start")
@@ -25,24 +34,56 @@ public class InterviewController {
     }
 
     /** 2) 다음 질문 요청 */
-    @PostMapping("/question")
-    public ResponseEntity<GetNextQuestionResponse> getNextQuestion(
+//    @PostMapping("/question")
+//    public ResponseEntity<GetNextQuestionResponse> getNextQuestion(
+//            @RequestBody GetNextQuestionRequest request
+//    ) throws JsonProcessingException {
+//        GetNextQuestionResponse response;
+//
+//        response = interviewService.getNextQuestion(request);
+//
+//        return ResponseEntity.ok(response);
+//    }
+
+    @PostMapping(value = "/question", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    public ResponseEntity<byte[]> getNextQuestion(
             @RequestBody GetNextQuestionRequest request
-    ) throws JsonProcessingException {
-        GetNextQuestionResponse response;
+    ) throws Exception {
+        // 1) 기존 인터뷰 로직 호출
+        GetNextQuestionResponse dto = interviewService.getNextQuestion(request);
 
-        response = interviewService.getNextQuestion(request);
+        // 2) 질문 텍스트를 음성으로 합성
+        byte[] audioBytes = ttsService.synthesize(dto.getQuestion());
 
-        return ResponseEntity.ok(response);
+        // 3) 오디오 바이트 스트림으로 응답
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE)
+                .body(audioBytes);
     }
 
     /** 3) 답변 제출 */
-    @PostMapping("/answer")
+//    @PostMapping("/answer")
+//    public ResponseEntity<SubmitAnswerResponse> submitAnswer(
+//            @RequestBody SubmitAnswerRequest request
+//    ) {
+//        SubmitAnswerResponse response = interviewService.submitAnswer(request);
+//        return ResponseEntity.ok(response);
+//    }
+
+    @PostMapping(value = "/answer", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<SubmitAnswerResponse> submitAnswer(
-            @RequestBody SubmitAnswerRequest request
-    ) {
-        SubmitAnswerResponse response = interviewService.submitAnswer(request);
-        return ResponseEntity.ok(response);
+            @RequestParam("sessionId") String sessionId,
+            @RequestPart("file") MultipartFile file
+    ) throws IOException {
+        // 1) STT: 음성 파일을 텍스트로 변환
+        String transcript = sttService.transcribe(file);
+
+        // 2) 인터뷰 서비스에 전달할 DTO 생성
+        SubmitAnswerRequest req = new SubmitAnswerRequest(sessionId, transcript);
+
+        // 3) 기존 로직 그대로 호출
+        SubmitAnswerResponse resp = interviewService.submitAnswer(req);
+        return ResponseEntity.ok(resp);
     }
 
     /** 4) 결과(요약) 요청 */

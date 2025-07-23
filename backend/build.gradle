@@ -37,6 +37,8 @@ dependencies {
 	implementation 'org.springframework.session:spring-session-data-redis'
 	implementation 'org.apache.tika:tika-parsers-standard-package:3.2.0'
 	implementation 'org.apache.tika:tika-core:3.2.0'
+	implementation 'com.google.cloud:google-cloud-speech:4.63.0'
+	implementation 'com.google.cloud:google-cloud-texttospeech:2.69.0'
 }
 
 tasks.named('test') {
