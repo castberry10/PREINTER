@@ -35,7 +35,7 @@ jobs:
       # 4) Gradle로 빌드
       - name: Build with Gradle
         run: |
-          chmod +x /backend/gradlew
+          chmod +x backend/gradlew
           ./backend/gradlew clean build --no-daemon
 
       # 5) 아티팩트 준비
