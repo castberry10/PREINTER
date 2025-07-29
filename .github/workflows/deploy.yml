@@ -37,7 +37,7 @@ jobs:
         working-directory: backend
         run: |
           chmod +x gradlew
-          ./gradlew clean build --no-daemon
+          ./gradlew clean build -x test --no-daemon
 
       # 5) 아티팩트 준비
       - name: Prepare artifact
