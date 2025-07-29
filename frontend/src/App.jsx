@@ -9,6 +9,7 @@ import InterviewSetupPage from './pages/InterviewSetupPage';
 import InterviewRoomPage from './pages/InterviewRoomPage';
 import InterviewResultPage from './pages/InterviewResultPage';
 import InterviewReplayPage from './pages/InterviewReplayPage';
+import LoginPage from './pages/LoginPage';
 function App() {
 
   return (
@@ -21,6 +22,7 @@ function App() {
           <Route path=":sessionId/result" element={<InterviewResultPage />} />
           <Route path=":sessionId/replay" element={<InterviewReplayPage />} />
         </Route>
+        <Route path="login" element={<LoginPage />} />
         <Route path="/*" element={<NotFoundErrorPage />} />
       </Routes>
     </div>
