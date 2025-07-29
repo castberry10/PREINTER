@@ -26,8 +26,8 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
+            ~/backend/.gradle/caches
+            ~/backend/.gradle/wrapper
           key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             gradle-${{ runner.os }}-
@@ -36,7 +36,7 @@ jobs:
       - name: Build with Gradle
         run: |
           chmod +x gradlew
-          ./gradlew clean build --no-daemon
+          ./backend/gradlew clean build --no-daemon
 
       # 5) 아티팩트 준비
       - name: Prepare artifact
