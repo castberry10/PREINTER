@@ -46,7 +46,7 @@ jobs:
 
       # 6) SSH 에이전트 활성화 및 키 등록
       - name: Setup SSH
-        uses: webfactory/ssh-agent@v0.8.1
+        uses: webfactory/ssh-agent@v0.9.1
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
