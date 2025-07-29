@@ -10,6 +10,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Debug GitHub Secrets
+        env:
+          MY_EC2_USER: ${{ secrets.EC2_USER }}
+          MY_EC2_HOST: ${{ secrets.EC2_HOST }}
+        run: echo "USER=$MY_EC2_USER"
+          echo "HOST=$MY_EC2_HOST"
+        
       # 1) 코드 체크아웃
       - name: Checkout code
         uses: actions/checkout@v3
@@ -45,9 +52,7 @@ jobs:
           JAR_FILE=$(find backend/build/libs -type f -name "*.jar" | head -n 1)
           cp "$JAR_FILE" PREINTER.jar
           
-      - name: Debug GitHub Secrets
-        run: echo "EC2_USER=${{ secrets.EC2_USER }}, EC2_HOST=${{ secrets.EC2_HOST }}"
-        
+
       # 6) SSH 에이전트 활성화 및 키 등록
       - name: Setup SSH
         uses: webfactory/ssh-agent@v0.9.1
