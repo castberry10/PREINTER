@@ -10,13 +10,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Debug GitHub Secrets
-        env:
-          MY_EC2_USER: ${{ secrets.EC2_USER }}
-          MY_EC2_HOST: ${{ secrets.EC2_HOST }}
-        run: echo "USER=$MY_EC2_USER"
-          echo "HOST=$MY_EC2_HOST"
-        
       # 1) 코드 체크아웃
       - name: Checkout code
         uses: actions/checkout@v3
@@ -62,6 +55,21 @@ jobs:
       # testtest
       - name: Test SSH connectivity
         run: ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} whoami
+      - name: Debug GitHub Secrets
+        env:
+          MY_EC2_USER: ${{ secrets.EC2_USER }}
+          MY_EC2_HOST: ${{ secrets.EC2_HOST }}
+        run: echo "USER=$MY_EC2_USER"
+          echo "HOST=$MY_EC2_HOST"
+        
+      - name: Verbose SSH connectivity test
+      run: |
+        echo "=== SSH -vvv 시작 ==="
+        ssh -i <(echo "${{ secrets.SSH_PRIVATE_KEY }}") \
+        -o StrictHostKeyChecking=no \
+        -vvv \
+        ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
+        whoami
         
       # 7) EC2로 JAR 파일 전송
       - name: Copy artifact to EC2
