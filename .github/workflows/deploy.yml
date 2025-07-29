@@ -53,18 +53,18 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
           
-      # testtest
-      - name: Verbose SSH connectivity test
-        run: |
-          echo "=== SSH -vvv 시작 ==="
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ./deploy_key
-          chmod 600 ./deploy_key
+      # # testtest
+      # - name: Verbose SSH connectivity test
+      #   run: |
+      #     echo "=== SSH -vvv 시작 ==="
+      #     echo "${{ secrets.SSH_PRIVATE_KEY }}" > ./deploy_key
+      #     chmod 600 ./deploy_key
           
-          ssh -i ./deploy_key \
-            -o StrictHostKeyChecking=no \
-            -vvv \
-            deploy@${{ secrets.EC2_HOST }} \
-            whoami
+      #     ssh -i ./deploy_key \
+      #       -o StrictHostKeyChecking=no \
+      #       -vvv \
+      #       deploy@${{ secrets.EC2_HOST }} \
+      #       whoami
         
       # 7) EC2로 JAR 파일 전송
       - name: Copy artifact to EC2
