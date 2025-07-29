@@ -63,7 +63,7 @@ jobs:
           ssh -i ./deploy_key \
             -o StrictHostKeyChecking=no \
             -vvv \
-            ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
+            deploy@${{ secrets.EC2_HOST }} \
             whoami
         
       # 7) EC2로 JAR 파일 전송
