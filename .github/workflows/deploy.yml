@@ -54,15 +54,6 @@ jobs:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
           
       # testtest
-      - name: Test SSH connectivity
-        run: ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} whoami
-      - name: Debug GitHub Secrets
-        env:
-          MY_EC2_USER: ${{ secrets.EC2_USER }}
-          MY_EC2_HOST: ${{ secrets.EC2_HOST }}
-        run: echo "USER=$MY_EC2_USER"
-          echo "HOST=$MY_EC2_HOST"
-        
       - name: Verbose SSH connectivity test
         run: |
           echo "=== SSH -vvv 시작 ==="
