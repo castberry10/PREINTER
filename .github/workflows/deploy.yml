@@ -26,22 +26,23 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
-            ~/backend/.gradle/caches
-            ~/backend/.gradle/wrapper
+            ~/.gradle/caches
+            ~/.gradle/wrapper
           key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             gradle-${{ runner.os }}-
 
       # 4) Gradle로 빌드
       - name: Build with Gradle
+        working-directory: backend
         run: |
-          chmod +x backend/gradlew
-          ./backend/gradlew clean build --no-daemon
+          chmod +x gradlew
+          ./gradlew clean build --no-daemon
 
       # 5) 아티팩트 준비
       - name: Prepare artifact
         run: |
-          JAR_FILE=$(find build/libs -type f -name "*.jar" | head -n 1)
+          JAR_FILE=$(find backend/build/libs -type f -name "*.jar" | head -n 1)
           cp "$JAR_FILE" PREINTER.jar
 
       # 6) SSH 에이전트 활성화 및 키 등록
