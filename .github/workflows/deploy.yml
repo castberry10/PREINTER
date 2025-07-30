@@ -70,7 +70,7 @@ jobs:
       - name: Copy artifact to EC2
         run: scp -o StrictHostKeyChecking=no PREINTER.jar ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/opt/PREINTER/
 
-      # 8) EC2에서 서비스 재시작
+      # 8) EC2에서 서비스 재시작 
       - name: Restart service on EC2
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
