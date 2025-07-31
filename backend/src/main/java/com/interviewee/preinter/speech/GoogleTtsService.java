@@ -1,12 +1,16 @@
 package com.interviewee.preinter.speech;
 
 import com.google.cloud.texttospeech.v1.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
+@Service
 public class GoogleTtsService {
     private final TextToSpeechClient ttsClient;
 
-    public GoogleTtsService() throws Exception {
-        this.ttsClient = TextToSpeechClient.create();
+    @Autowired
+    public GoogleTtsService(TextToSpeechClient ttsClient) {
+        this.ttsClient = ttsClient;
     }
 
     /**

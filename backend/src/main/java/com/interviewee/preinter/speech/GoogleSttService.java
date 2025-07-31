@@ -2,6 +2,7 @@ package com.interviewee.preinter.speech;
 
 import com.google.cloud.speech.v1.*;
 import com.google.protobuf.ByteString;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -12,8 +13,9 @@ import java.util.stream.Collectors;
 public class GoogleSttService {
     private final SpeechClient speechClient;
 
-    public GoogleSttService() throws IOException {
-        this.speechClient = SpeechClient.create();
+    @Autowired
+    public GoogleSttService(SpeechClient speechClient) {
+        this.speechClient = speechClient;
     }
 
     /**
