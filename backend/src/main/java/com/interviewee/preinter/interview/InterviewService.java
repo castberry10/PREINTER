@@ -81,9 +81,3 @@ public class InterviewService {
         return new GetResultResponse(summary, "면접이 종료되었습니다. 수고하셨습니다.");
     }
 }
-
-// 지금 안돼있는거
-// 1. 파일받아와서 gpt한테 파싱하기 -> 완료
-
-// 2. 질문 동적 생성하기 -> 해야됨
-// 3. 결과 요약하기 -> 대충 완료

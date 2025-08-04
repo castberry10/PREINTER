@@ -11,8 +11,8 @@ import java.io.IOException;
 
 @Configuration
 public class OpenAIConfig {
-    @Value("${OPENAI_API_KEY}")
-    private String apiKey;
+//    @Value("${OPENAI_API_KEY}")
+//    private String apiKey;
 
     private final SecretFetcher secrets;
     private final String secretName;
