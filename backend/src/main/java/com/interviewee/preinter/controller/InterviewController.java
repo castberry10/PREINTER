@@ -35,14 +35,14 @@ public class InterviewController {
 
     /** 2) 다음 질문 요청 - 텍스트 */
     @PostMapping("/question/text")
-    public ResponseEntity<GetNextQuestionResponse> getNextQuestionText(
+    public ResponseEntity<String> getNextQuestionText(
             @RequestBody GetNextQuestionRequest request
     ) throws JsonProcessingException {
         GetNextQuestionResponse response;
 
         response = interviewService.getNextQuestion(request);
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(response.getQuestion());
     }
 
     /** 2) 다음 질문 요청 - 음성 */
