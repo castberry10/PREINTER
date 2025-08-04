@@ -33,20 +33,21 @@ public class InterviewController {
         return ResponseEntity.ok(response);
     }
 
-    /** 2) 다음 질문 요청 */
-//    @PostMapping("/question")
-//    public ResponseEntity<GetNextQuestionResponse> getNextQuestion(
-//            @RequestBody GetNextQuestionRequest request
-//    ) throws JsonProcessingException {
-//        GetNextQuestionResponse response;
-//
-//        response = interviewService.getNextQuestion(request);
-//
-//        return ResponseEntity.ok(response);
-//    }
+    /** 2) 다음 질문 요청 - 텍스트 */
+    @PostMapping("/question/text")
+    public ResponseEntity<GetNextQuestionResponse> getNextQuestionText(
+            @RequestBody GetNextQuestionRequest request
+    ) throws JsonProcessingException {
+        GetNextQuestionResponse response;
 
-    @PostMapping(value = "/question", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-    public ResponseEntity<byte[]> getNextQuestion(
+        response = interviewService.getNextQuestion(request);
+
+        return ResponseEntity.ok(response);
+    }
+
+    /** 2) 다음 질문 요청 - 음성 */
+    @PostMapping(value = "/question/audio", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    public ResponseEntity<byte[]> getNextQuestionAudio(
             @RequestBody GetNextQuestionRequest request
     ) throws Exception {
         // 1) 기존 인터뷰 로직 호출
@@ -61,17 +62,18 @@ public class InterviewController {
                 .body(audioBytes);
     }
 
-    /** 3) 답변 제출 */
-//    @PostMapping("/answer")
-//    public ResponseEntity<SubmitAnswerResponse> submitAnswer(
-//            @RequestBody SubmitAnswerRequest request
-//    ) {
-//        SubmitAnswerResponse response = interviewService.submitAnswer(request);
-//        return ResponseEntity.ok(response);
-//    }
+    /** 3) 답변 제출 - text */
+    @PostMapping("/answer/text")
+    public ResponseEntity<SubmitAnswerResponse> submitAnswerText(
+            @RequestBody SubmitAnswerRequest request
+    ) {
+        SubmitAnswerResponse response = interviewService.submitAnswer(request);
+        return ResponseEntity.ok(response);
+    }
 
-    @PostMapping(value = "/answer", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<SubmitAnswerResponse> submitAnswer(
+    /** 3) 답변 제출 - audio */
+    @PostMapping(value = "/answer/audio", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<SubmitAnswerResponse> submitAnswerAudio(
             @RequestParam("sessionId") String sessionId,
             @RequestPart("file") MultipartFile file
     ) throws IOException {
