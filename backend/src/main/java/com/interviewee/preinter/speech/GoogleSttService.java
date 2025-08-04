@@ -30,7 +30,8 @@ public class GoogleSttService {
 
         // 오디오 구성: 인코딩, 샘플링, 언어
         RecognitionConfig config = RecognitionConfig.newBuilder()
-                .setEncoding(RecognitionConfig.AudioEncoding.LINEAR16)
+                .setEncoding(RecognitionConfig.AudioEncoding.MP3)
+                .setSampleRateHertz(44100)
                 .setLanguageCode("ko-KR")
                 .build();
         RecognitionAudio audio = RecognitionAudio.newBuilder()
