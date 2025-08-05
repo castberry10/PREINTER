@@ -129,8 +129,6 @@ function Avatar({ speaking }) {
 
 export default function InterviewRoomPage() {
 
-
-
   const navigate = useNavigate();
   const { sessionId } = useParams();
   const { interviewDuration = 10 } = useLocation().state || {};
@@ -140,16 +138,18 @@ export default function InterviewRoomPage() {
   const [loading, setLoading]       = useState(false);    
   const timerRef   = useRef(null);
   const speakTimer = useRef(null);
-
+  const END_KEY = `interviewEndTime_${sessionId}`;
   // const now = Date.now();
   // const endTime = now + interviewDuration * 60 * 1000;
   // localStorage.setItem("interviewEndTime", endTime.toString());
-
-  const endTimeRef = useRef(
-    Number(localStorage.getItem("interviewEndTime")) ||
-    Date.now() + interviewDuration * 60 * 1000
-  );
-  localStorage.setItem("interviewEndTime", endTimeRef.current.toString());
+  const savedEnd = Number(localStorage.getItem(END_KEY));
+  const initialEnd =
+    savedEnd && savedEnd > Date.now()
+      ? savedEnd
+      : Date.now() + interviewDuration * 60 * 1000;
+  
+  const endTimeRef = useRef(initialEnd);
+  localStorage.setItem(END_KEY, initialEnd.toString());
   const finishInterview = () => {
     setSubtitle("수고하셨습니다.");
     setSpeaking(false);
@@ -194,10 +194,6 @@ export default function InterviewRoomPage() {
     }
   };
 
-  useEffect(() => {
-    fetchQuestion();
-    return () => clearTimeout(speakTimer.current);
-  }, []);
 
     const handleSend = async (e) => {
     e.preventDefault();
