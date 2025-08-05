@@ -29,7 +29,7 @@ public class InterviewController {
     public ResponseEntity<StartInterviewResponse> startInterview(
             @RequestPart("resumeFile") MultipartFile resumeFile
     ) {
-        StartInterviewResponse response = interviewService.startInterview(resumeFile);
+        StartInterviewResponse response = interviewService.startInterview((StartInterviewRequest) resumeFile);
         return ResponseEntity.ok(response);
     }
 
