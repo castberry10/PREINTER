@@ -1,10 +1,10 @@
 // InterviewRoomPage.jsx
-import React, { useEffect, useRef, useState } from 'react';
-import styled from 'styled-components';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, useGLTF } from '@react-three/drei';
-import { useNavigate, useParams } from 'react-router-dom';
-
+import React, { useEffect, useRef, useState } from "react";
+import styled from "styled-components";
+import { Canvas, useFrame } from "@react-three/fiber";
+import { OrbitControls, useGLTF } from "@react-three/drei";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
+import axios from "axios";
 const Page = styled.div`
   position: relative;
   min-height: 100vh;
@@ -56,6 +56,7 @@ const ChatBox = styled.form`
     font-size: 1rem;
   }
   button {
+  font-size: 1rem;
     padding: 0.75rem 1.5rem;
     border: none;
     border-radius: 0.75rem;
@@ -63,6 +64,27 @@ const ChatBox = styled.form`
     color: #f8fafc;
     font-weight: 600;
     cursor: pointer;
+  }
+`;
+
+const ExitButton = styled.button`
+  position: absolute;
+  top: 2rem;
+  right: 2rem;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 0, 0, 0.1);
+  color: #f8fafc;
+  border: 1px solid rgba(255, 0, 0, 0.2);
+  border-radius: 0.75rem;
+  font-weight: 600;
+  font-size: 1.2rem;
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+  transition: background 0.2s;
+  z-index: 10;
+
+  &:hover {
+    background: rgba(255, 0, 0, 0.25);
   }
 `;
 
@@ -106,54 +128,109 @@ function Avatar({ speaking }) {
 }
 
 export default function InterviewRoomPage() {
+
+
+
   const navigate = useNavigate();
   const { sessionId } = useParams();
+  const { interviewDuration = 10 } = useLocation().state || {};
+  const [subtitle, setSubtitle] = useState("질문을 불러오는 중…");
+  const [speaking, setSpeaking]     = useState(false);
+  const [input, setInput]           = useState("");
+  const [loading, setLoading]       = useState(false);    
+  const timerRef   = useRef(null);
+  const speakTimer = useRef(null);
 
-  const QUESTIONS = [
-    '저희 회사에 왜 지원하셨죠?',
-    '앞으로 5년 뒤 목표는 무엇인가요?',
-    '가장 큰 실패 경험과 배운 점은 무엇인가요?',
-  ];
+  // const now = Date.now();
+  // const endTime = now + interviewDuration * 60 * 1000;
+  // localStorage.setItem("interviewEndTime", endTime.toString());
 
-  const [idx, setIdx] = useState(0);
-  const [subtitle, setSubtitle] = useState(QUESTIONS[0]);
-  const [speaking, setSpeaking] = useState(true);
-  const [input, setInput] = useState('');
+  const endTimeRef = useRef(
+    Number(localStorage.getItem("interviewEndTime")) ||
+    Date.now() + interviewDuration * 60 * 1000
+  );
+  localStorage.setItem("interviewEndTime", endTimeRef.current.toString());
+  const finishInterview = () => {
+    setSubtitle("수고하셨습니다.");
+    setSpeaking(false);
+    // 3초 뒤 결과 페이지로 이동
+    setTimeout(() => navigate(`/interview/${sessionId}/result`), 3000);
+};
 
-  const timerRef = useRef(null);
-
-  const startSpeaking = () => {
+  const startSpeaking = (ms = 4500) => {
     setSpeaking(true);
-    timerRef.current = setTimeout(() => setSpeaking(false), 5000);
+    speakTimer.current && clearTimeout(speakTimer.current);
+    speakTimer.current = setTimeout(() => setSpeaking(false), ms);
   };
 
   useEffect(() => {
-    startSpeaking();
-    return () => clearTimeout(timerRef.current);
+    fetchQuestion();
+    return () => clearTimeout(speakTimer.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleSend = (e) => {
+  const fetchQuestion = async () => {
+    if (Date.now() >= endTimeRef.current) {
+      finishInterview();
+      return;
+    }
+
+    try {
+      const { data: question } = await axios.post(
+        "/interview/question/text",
+        { sessionId }
+      );
+
+      // if (!question || question === "END") {
+      //   finishInterview();
+      //   return;
+      // }
+
+      setSubtitle(question);
+      startSpeaking();
+    } catch (err) {
+      console.error(err);
+      setSubtitle("질문을 가져오지 못했습니다. 다시 시도해 주세요.");
+    }
+  };
+
+  useEffect(() => {
+    fetchQuestion();
+    return () => clearTimeout(speakTimer.current);
+  }, []);
+
+    const handleSend = async (e) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() || loading) return;
 
-    console.log(`Q${idx + 1} 답변:`, input);
-    setInput('');
-    setSubtitle('응답 전송 중…');
+    setLoading(true);
+    try {
+      await axios.post("/interview/answer/text", {
+        sessionId,
+        answer: input.trim(),
+      });
 
-    setTimeout(() => {
-      const nextIdx = idx + 1;
-      if (nextIdx < QUESTIONS.length) {
-        setIdx(nextIdx);
-        setSubtitle(QUESTIONS[nextIdx]);
-        startSpeaking();
-      } else {
-        navigate(`/interview/${sessionId}/result`);
-      }
-    }, 500);
+      setInput("");
+      setSubtitle("다음 질문을 불러오는 중…");
+      await fetchQuestion(); 
+    } catch (err) {
+      console.error(err);
+      alert("답변 전송에 실패했습니다. 다시 시도해 주세요.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <Page>
+        <ExitButton onClick={() => {
+          const confirmExit = window.confirm("정말 면접을 종료하시겠습니까?");
+          if (confirmExit) {
+            navigate(`/interview/${sessionId}/result`);
+          }
+        }}>
+          면접 종료
+        </ExitButton>
       <Stage>
         <Canvas camera={{ position: [0, 1.4, 3.2], fov: 35 }}>
           <ambientLight intensity={0.7} />
@@ -176,7 +253,9 @@ export default function InterviewRoomPage() {
           onChange={(e) => setInput(e.target.value)}
           placeholder="답변을 입력하세요…"
         />
-        <button type="submit">Send</button>
+        <button type="submit" disabled={loading}>
+          {loading ? "전송 중…" : "전송"}
+        </button>
       </ChatBox>
     </Page>
   );

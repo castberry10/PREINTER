@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence  } from 'framer-motion';
 import { Sparkles, PlayCircle } from 'lucide-react';
 import axios from "axios";   
 const drift = keyframes`
@@ -118,9 +118,73 @@ const InterviewSetupPageBlock = styled(motion.main)`
   }
 `;
 
+const spin = keyframes`
+  to { transform: rotate(360deg); }
+`;
+
+const LoaderOverlay = styled(motion.div)`
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 1.2rem;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(3px);
+  color: #f1f5f9;
+  font-size: 0.95rem;
+  z-index: 9999;      /* 화면 맨 위 */
+`;
+
+const Spinner = styled.div`
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(255, 255, 255, 0.25);
+  border-top-color: #f8fafc;
+  border-radius: 50%;
+  animation: ${spin} 0.8s linear infinite;
+`;
+import * as pdfjsLib from "pdfjs-dist";
+import pdfWorker from "pdfjs-dist/build/pdf.worker?url";
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
+
+const extractTextFromPDF = async (file) => {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+  let text = "";
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    const pageText = content.items.map((item) => item.str).join(" ");
+    text += pageText + "\n";
+  }
+
+  return text;
+};
+
 export default function InterviewSetupPage() {
   const navigate = useNavigate();
-  const [resume, setResume]         = useState(null);
+  const [resume, setResume] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState("");
+  const [interviewDuration, setInterviewDuration] = useState(10);
+  useEffect(() => {
+    if (!loading) {
+      setLoadingMessage(""); 
+      return;
+    }
+
+    setLoadingMessage("이력서 AI 정밀 분석 중...");
+
+    const timeout = setTimeout(() => {
+      setLoadingMessage("면접 장소로 이동하는 중...");
+    }, 2000);
+
+    return () => clearTimeout(timeout);
+  }, [loading]);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -137,23 +201,31 @@ export default function InterviewSetupPage() {
       alert("이력서를 먼저 업로드해 주세요.");
       return;
     }
+    
 
-    const formData = new FormData();
-    formData.append("resumeFile", resume); 
+
     try {
+      setLoading(true); 
+        const extractedText = await extractTextFromPDF(resume); 
       const res = await axios.post(
         "/interview/start",
-        formData,
-        { headers: { "Content-Type": "multipart/form-data", } }
+        {
+          resumeFile: extractedText
+        },
+        { headers: { "Content-Type": "application/json" } }
       );
 
       const { sessionId } = res.data;
       navigate(`/interview/${sessionId}`, {
-        state: { resumeName: resume.name },
+        state: { resumeName: resume.name,
+          interviewDuration: interviewDuration
+         },
       });
     } catch (err) {
       console.error(err);
       alert("면접 세션을 시작할 수 없습니다. 잠시 후 다시 시도해 주세요.");
+    }finally {
+      setLoading(false);                    
     }
   };
 
@@ -174,13 +246,17 @@ export default function InterviewSetupPage() {
       <h1>인터뷰 세팅</h1>
       <form onSubmit={e => { e.preventDefault(); handleStartInterview(); }}>
         <label>
-          난이도
-          {/* <select value={difficulty} onChange={e => setDifficulty(e.target.value)}>
-            <option value="easy">Easy</option>
-            <option value="medium">Medium</option>
-            <option value="hard">Hard</option>
-          </select> */}
-        </label>
+        면접 시간 선택
+        <select
+          value={interviewDuration}
+          onChange={(e) => setInterviewDuration(parseInt(e.target.value))}
+        >
+          <option value={5}>5분</option>
+          <option value={10}>10분</option>
+          <option value={15}>15분</option>
+          <option value={20}>20분</option>
+        </select>
+      </label>
 
         <label>
           이력서 (PDF)
@@ -192,6 +268,20 @@ export default function InterviewSetupPage() {
           <PlayCircle size={18} />&nbsp;면접 시작하기
         </button>
       </form>
+      <AnimatePresence>
+        {loading && (
+          <LoaderOverlay
+            key="loader"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+          >
+            <Spinner />  
+            <span>{loadingMessage}</span>
+          </LoaderOverlay>
+        )}
+      </AnimatePresence>
     </InterviewSetupPageBlock>
   );
 }
