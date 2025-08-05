@@ -5,6 +5,7 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, useGLTF } from "@react-three/drei";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import axios from "axios";
+import * as THREE from "three";
 const Page = styled.div`
   position: relative;
   min-height: 100vh;
@@ -88,34 +89,83 @@ const ExitButton = styled.button`
   }
 `;
 
-function Avatar({ speaking }) {
-  const { scene } = useGLTF('/models/avatar.glb');
-  const tRef = useRef(0);
-  const mouthRef = useRef(null);
-  const jawIndexRef = useRef(null);
+// function Avatar({ speaking }) {
+//   const { scene } = useGLTF('/models/avatar.glb');
+//   const tRef = useRef(0);
+//   const mouthRef = useRef(null);
+//   const jawIndexRef = useRef(null);
 
+//   useEffect(() => {
+//     scene.traverse((obj) => {
+//       if (obj.isMesh && obj.morphTargetDictionary?.mouthOpen !== undefined) {
+//         mouthRef.current = obj;
+//         jawIndexRef.current = obj.morphTargetDictionary.mouthOpen;
+//       }
+//     });
+//   }, [scene]);
+
+//   useFrame((_, delta) => {
+//     const mesh = mouthRef.current;
+//     const idx = jawIndexRef.current;
+//     if (!mesh || idx === undefined) return;
+
+//     tRef.current += delta * (speaking ? 6 : 2);
+//     const target = speaking ? 1 : 0;
+//     mesh.morphTargetInfluences[idx] +=
+//       (target - mesh.morphTargetInfluences[idx]) * 0.1;
+//     if (speaking) {
+//       mesh.morphTargetInfluences[idx] +=
+//         Math.sin(tRef.current * 20) * 0.03;
+//     }
+//   });
+
+//   return (
+//     <primitive
+//       object={scene}
+//       scale={2.3}
+//       position={[0, -2.4, 0]}
+//     />
+//   );
+// }
+
+function Avatar({ speaking }) {
+  const { scene } = useGLTF("/models/avatar.glb");
+
+  const mouthMeshes = useRef([]);
   useEffect(() => {
-    scene.traverse((obj) => {
-      if (obj.isMesh && obj.morphTargetDictionary?.jawOpen !== undefined) {
-        mouthRef.current = obj;
-        jawIndexRef.current = obj.morphTargetDictionary.jawOpen;
+    mouthMeshes.current = [];
+    scene.traverse((o) => {
+      const idx = o.isMesh && o.morphTargetDictionary?.mouthOpen;
+      if (idx !== undefined) {
+        mouthMeshes.current.push({ mesh: o, idx });
       }
     });
   }, [scene]);
 
-  useFrame((_, delta) => {
-    const mesh = mouthRef.current;
-    const idx = jawIndexRef.current;
-    if (!mesh || idx === undefined) return;
+  const t = useRef(0);
 
-    tRef.current += delta * (speaking ? 6 : 2);
-    const target = speaking ? 1 : 0;
-    mesh.morphTargetInfluences[idx] +=
-      (target - mesh.morphTargetInfluences[idx]) * 0.1;
-    if (speaking) {
-      mesh.morphTargetInfluences[idx] +=
-        Math.sin(tRef.current * 20) * 0.03;
-    }
+  useFrame((_, delta) => {
+    if (!mouthMeshes.current.length) return;
+
+    const SPEAKING_SPEED = 6;          // speaking=true일 때 시간 증가 속도
+    const IDLE_SPEED     = 2;          // speaking=false일 때 시간 증가 속도
+    const BASE_OPEN      = 0.8;        // 기본 입 벌림 정도 (0~1)
+    const SHAKE_AMPLITUDE = 0.5;       // 입 진동 크기 (0~1)
+    const SHAKE_FREQUENCY = 2;         // 진동 주파수 (값이 클수록 빠름)
+
+    t.current += delta * (speaking ? SPEAKING_SPEED : IDLE_SPEED);
+
+    const base   = speaking ? BASE_OPEN : 0;
+    const shake  = speaking ? Math.sin(t.current * SHAKE_FREQUENCY) * SHAKE_AMPLITUDE : 0; 
+    const target = THREE.MathUtils.clamp(base + shake, 0, 1);
+
+    mouthMeshes.current.forEach(({ mesh, idx }) => {
+      mesh.morphTargetInfluences[idx] = THREE.MathUtils.lerp(
+        mesh.morphTargetInfluences[idx],
+        target,
+        0.2 
+      );
+    });
   });
 
   return (

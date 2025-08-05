@@ -181,7 +181,7 @@ export default function InterviewSetupPage() {
 
     const timeout = setTimeout(() => {
       setLoadingMessage("면접 장소로 이동하는 중...");
-    }, 2000);
+    }, 3000);
 
     return () => clearTimeout(timeout);
   }, [loading]);
@@ -251,6 +251,7 @@ export default function InterviewSetupPage() {
           value={interviewDuration}
           onChange={(e) => setInterviewDuration(parseInt(e.target.value))}
         >
+          <option value={1}>1분(테스트용)</option>
           <option value={5}>5분</option>
           <option value={10}>10분</option>
           <option value={15}>15분</option>
