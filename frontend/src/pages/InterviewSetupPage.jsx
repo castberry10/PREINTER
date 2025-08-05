@@ -3,7 +3,7 @@ import styled, { keyframes } from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Sparkles, PlayCircle } from 'lucide-react';
-
+import axios from "axios";   
 const drift = keyframes`
   0%   { background-position:   0% 50%; }
   50%  { background-position: 100% 50%; }
@@ -120,23 +120,41 @@ const InterviewSetupPageBlock = styled(motion.main)`
 
 export default function InterviewSetupPage() {
   const navigate = useNavigate();
-  const [jobRole, setJobRole]       = useState('developer');
-  const [difficulty, setDifficulty] = useState('medium');
   const [resume, setResume]         = useState(null);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file && file.type !== 'application/pdf') {
-      alert('PDF 파일만 업로드할 수 있습니다.');
+      alert('PDF 파일을 업로드해주세요.');
       e.target.value = '';
       return;
     }
     setResume(file);
   };
 
-  const handleStartInterview = () => {
-    const sessionId = Math.random().toString(36).substring(2, 15);
-    navigate(`/interview/${sessionId}`, { state: { jobRole, difficulty, resumeName: resume?.name } });
+  const handleStartInterview = async () => {
+    if (!resume) {
+      alert("이력서를 먼저 업로드해 주세요.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("resumeFile", resume); 
+    try {
+      const res = await axios.post(
+        "/interview/start",
+        formData,
+        { headers: { "Content-Type": "multipart/form-data", } }
+      );
+
+      const { sessionId } = res.data;
+      navigate(`/interview/${sessionId}`, {
+        state: { resumeName: resume.name },
+      });
+    } catch (err) {
+      console.error(err);
+      alert("면접 세션을 시작할 수 없습니다. 잠시 후 다시 시도해 주세요.");
+    }
   };
 
   return (
@@ -157,11 +175,11 @@ export default function InterviewSetupPage() {
       <form onSubmit={e => { e.preventDefault(); handleStartInterview(); }}>
         <label>
           난이도
-          <select value={difficulty} onChange={e => setDifficulty(e.target.value)}>
+          {/* <select value={difficulty} onChange={e => setDifficulty(e.target.value)}>
             <option value="easy">Easy</option>
             <option value="medium">Medium</option>
             <option value="hard">Hard</option>
-          </select>
+          </select> */}
         </label>
 
         <label>
