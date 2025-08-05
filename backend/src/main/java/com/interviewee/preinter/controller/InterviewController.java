@@ -25,11 +25,18 @@ public class InterviewController {
     private final GoogleSttService sttService;
 
     /** 1) 인터뷰 시작 */
-    @PostMapping(value = "/start", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+//    @PostMapping(value = "/start", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+//    public ResponseEntity<StartInterviewResponse> startInterview(
+//            @RequestPart("resumeFile") MultipartFile resumeFile
+//    ) {
+//        StartInterviewResponse response = interviewService.startInterview(resumeFile);
+//        return ResponseEntity.ok(response);
+//    }
+    @PostMapping("/start")
     public ResponseEntity<StartInterviewResponse> startInterview(
-            @RequestPart("resumeFile") MultipartFile resumeFile
+            @RequestBody StartInterviewRequest request
     ) {
-        StartInterviewResponse response = interviewService.startInterview((StartInterviewRequest) resumeFile);
+        StartInterviewResponse response = interviewService.startInterview(request);
         return ResponseEntity.ok(response);
     }
 

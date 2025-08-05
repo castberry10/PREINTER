@@ -10,8 +10,11 @@ import InterviewRoomPage from './pages/InterviewRoomPage';
 import InterviewResultPage from './pages/InterviewResultPage';
 import InterviewReplayPage from './pages/InterviewReplayPage';
 import LoginPage from './pages/LoginPage';
-function App() {
+import axios from 'axios';
 
+function App() {
+  axios.defaults.baseURL = "http://54.180.25.169:8080/api";
+  // axios.defaults.withCredentials = true;
   return (
     <div>
       <Routes>
