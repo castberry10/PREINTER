@@ -34,11 +34,15 @@ public class CorsFilterConfig {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        // 개발 중엔 "*" 사용 가능, 운영에선 정확한 도메인 명시하세요
-        config.setAllowedOriginPatterns(List.of("http://localhost:5173"));
+        // 모든 도메인·포트 허용
+        config.setAllowedOriginPatterns(List.of("*"));
+        // 또는 setAllowedOrigins(List.of("*")) 도 가능합니다만,
+        // 스프링 6.1+에선 와일드카드 패턴을 지원하는 setAllowedOriginPatterns가 권장됩니다.
+
         config.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
-        // config.setAllowCredentials(true);  // 쿠키·인증헤더 허용 시 활성화
+        // 인증정보(쿠키·Authorization 헤더) 필요 없으면 false, 필요하면 true로 설정
+        config.setAllowCredentials(false);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
