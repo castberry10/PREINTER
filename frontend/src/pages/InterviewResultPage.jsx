@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Sparkles, PlayCircle } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence  } from 'framer-motion';
 import axios from 'axios';
 
 const drift = keyframes`
@@ -69,6 +69,34 @@ const Wrapper = styled.main`
   }
 `;
 
+const spin = keyframes`
+  to { transform: rotate(360deg); }
+`;
+
+const LoaderOverlay = styled(motion.div)`
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 1.2rem;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(3px);
+  color: #f1f5f9;
+  font-size: 0.95rem;
+  z-index: 9999;      /* 화면 맨 위 */
+`;
+
+const Spinner = styled.div`
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(255, 255, 255, 0.25);
+  border-top-color: #f8fafc;
+  border-radius: 50%;
+  animation: ${spin} 0.8s linear infinite;
+`;
+
 const getPolygonPoints = (scores, radius = 140, centerX = 200, centerY = 200) =>
   Object.entries(scores)
     .map(([_, v], i, arr) => {
@@ -84,6 +112,8 @@ export default function InterviewResultPage(){
   const navigate=useNavigate();
   const{sessionId}=useParams();
   const[data,setData]=useState(null);
+    const [loading, setLoading] = useState(false);
+    const [loadingMessage, setLoadingMessage] = useState("");
 
   /* 실제 API 호출
   useEffect(()=>{
@@ -109,6 +139,20 @@ export default function InterviewResultPage(){
 
   return(
     <Wrapper>
+      <AnimatePresence>
+        {loading && (
+          <LoaderOverlay
+            key="loader"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+          >
+            <Spinner />  
+            <span>{loadingMessage}</span>
+          </LoaderOverlay>
+        )}
+      </AnimatePresence>
       <header>
         <a href="/" className="logo"><Sparkles/> PREINTER</a>
         <nav><a href="/login">Login</a></nav>
