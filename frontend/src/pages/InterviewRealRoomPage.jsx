@@ -1,11 +1,12 @@
-// InterviewRoomPage.jsx
 import React, { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, useGLTF } from "@react-three/drei";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import axios from "axios";
+import MicRecorder from 'mic-recorder-to-mp3-fixed';
 import * as THREE from "three";
+
 const Page = styled.div`
   position: relative;
   min-height: 100vh;
@@ -88,7 +89,28 @@ const ExitButton = styled.button`
     background: rgba(255, 0, 0, 0.25);
   }
 `;
+const RecControls = styled.div`
+  width: 100%;
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(8px);
 
+  button {
+    flex: 1;
+    padding: 0.9rem 1rem;
+    border-radius: 0.75rem;
+    border: none;
+    font-size: 1rem;
+    color: #f8fafc;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .rec      { background:#ef4444;}   /* 빨간 REC */
+  .stop     { background:#4f46e5;}   /* 보라 STOP */
+  .disabled { opacity:0.5; cursor:not-allowed;}
+`;
 function Avatar({ speaking }) {
   const { scene } = useGLTF("/models/avatar.glb");
 
@@ -139,131 +161,149 @@ function Avatar({ speaking }) {
 }
 
 export default function InterviewRealRoomPage() {
+  const navigate               = useNavigate();
+  const { sessionId }          = useParams();
+  const { interviewDuration=10 } = useLocation().state || {};
 
-  const navigate = useNavigate();
-  const { sessionId } = useParams();
-  const { interviewDuration = 10 } = useLocation().state || {};
   const [subtitle, setSubtitle] = useState("질문을 불러오는 중…");
-  const [speaking, setSpeaking]     = useState(false);
-  const [input, setInput]           = useState("");
-  const [loading, setLoading]       = useState(false);    
-  const timerRef   = useRef(null);
+  const [speaking, setSpeaking] = useState(false);
+
+  const [isRecording, setIsRecording] = useState(false);
+  const [loading,     setLoading]     = useState(false);
+
+  const recorder   = useRef(new MicRecorder({ bitRate: 128 }));
   const speakTimer = useRef(null);
-  const END_KEY = `interviewEndTime_${sessionId}`;
-  // const now = Date.now();
-  // const endTime = now + interviewDuration * 60 * 1000;
-  // localStorage.setItem("interviewEndTime", endTime.toString());
-  const savedEnd = Number(localStorage.getItem(END_KEY));
-  const initialEnd =
-    savedEnd && savedEnd > Date.now()
+  const END_KEY    = `interviewEndTime_${sessionId}`;
+  const savedEnd   = Number(localStorage.getItem(END_KEY));
+  const initialEnd = savedEnd && savedEnd > Date.now()
       ? savedEnd
-      : Date.now() + interviewDuration * 60 * 1000;
-  
+      : Date.now() + interviewDuration*60*1000;
   const endTimeRef = useRef(initialEnd);
   localStorage.setItem(END_KEY, initialEnd.toString());
+
   const finishInterview = () => {
     setSubtitle("수고하셨습니다.");
     setSpeaking(false);
-    // 3초 뒤 결과 페이지로 이동
     setTimeout(() => navigate(`/interview/${sessionId}/result`), 3000);
-};
-
-  const startSpeaking = (ms = 4500) => {
-    setSpeaking(true);
-    speakTimer.current && clearTimeout(speakTimer.current);
-    speakTimer.current = setTimeout(() => setSpeaking(false), ms);
   };
 
-  useEffect(() => {
-    fetchQuestion();
-    return () => clearTimeout(speakTimer.current);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const startSpeaking = (ms=4500) => {
+    setSpeaking(true);
+    clearTimeout(speakTimer.current);
+    speakTimer.current = setTimeout(() => setSpeaking(false), ms);
+  };
 
   const fetchQuestion = async () => {
     if (Date.now() >= endTimeRef.current) {
       finishInterview();
       return;
     }
-
     try {
-      const { data: question } = await axios.post(
-        "/interview/question/text",
-        { sessionId }
+      const { data } = await axios.post(
+        "/interview/question/audio",
+        { sessionId },
+        { responseType: "arraybuffer" }   // <-- 바이너리
       );
 
-      // if (!question || question === "END") {
-      //   finishInterview();
-      //   return;
-      // }
+      const blob = new Blob([data], { type: "audio/mpeg" });
+      const url  = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audio.play();
+      startSpeaking(blob.size / 16000); 
 
-      setSubtitle(question);
-      startSpeaking();
+      setSubtitle("질문을 듣고 답변을 녹음하세요.");
     } catch (err) {
       console.error(err);
-      setSubtitle("질문을 가져오지 못했습니다. 다시 시도해 주세요.");
+      setSubtitle("질문 재생에 실패했습니다.");
     }
   };
 
+  const uploadAnswer = async (mp3Blob) => {
+    const form = new FormData();
+    form.append("file", mp3Blob, "answer.mp3");
+    try {
+      await axios.post(
+        `/interview/answer/audio`,
+        form,
+        {
+          params: { sessionId },
+          headers: { "Content-Type": "multipart/form-data" }
+        }
+      );
+      setSubtitle("다음 질문을 불러오는 중…");
+      await fetchQuestion();
+    } catch (err) {
+      console.error(err);
+      alert("답변 업로드에 실패했습니다. 다시 시도해 주세요.");
+    }
+  };
 
-    const handleSend = async (e) => {
-      e.preventDefault();
-      if (!input.trim() || loading) return;
+  const startRecording = async () => {
+    try {
+      await recorder.current.start();
+      setIsRecording(true);
+    } catch (e) {
+      alert("마이크 권한이 필요합니다.");
+    }
+  };
 
-      setLoading(true);
-      try {
-        await axios.post("/interview/answer/text", {
-          sessionId,
-          answer: input.trim(),
-        });
+  const stopRecording = async () => {
+    setLoading(true);
+    setIsRecording(false);
+    try {
+      const [, blob] = await recorder.current
+        .stop()
+        .getMp3();        
+      await uploadAnswer(blob);
+    } catch (e) {
+      console.error(e);
+      alert("녹음 처리 중 오류가 발생했습니다.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        setInput("");
-        setSubtitle("다음 질문을 불러오는 중…");
-        await fetchQuestion(); 
-      } catch (err) {
-        console.error(err);
-        alert("답변 전송에 실패했습니다. 다시 시도해 주세요.");
-      } finally {
-        setLoading(false);
-      }
-    };
+  useEffect(() => {
+    fetchQuestion();
+    return () => clearTimeout(speakTimer.current);
+  }, []);
 
   return (
     <Page>
-        <ExitButton onClick={() => {
-          const confirmExit = window.confirm("정말 면접을 종료하시겠습니까?");
-          if (confirmExit) {
-            navigate(`/interview/${sessionId}/result`);
-          }
-        }}>
-          면접 종료
-        </ExitButton>
+      <ExitButton onClick={()=>{
+        if (window.confirm("정말 면접을 종료하시겠습니까?"))
+          navigate(`/interview/${sessionId}/result`);
+      }}>
+        면접 종료
+      </ExitButton>
+
       <Stage>
-        <Canvas camera={{ position: [0, 1.4, 3.2], fov: 35 }}>
-          <ambientLight intensity={0.7} />
-          <directionalLight position={[1, 2, 3]} intensity={1} />
-          <Avatar speaking={speaking} />
-          <OrbitControls
-            enablePan={false}
-            enableRotate={false}
-            enableZoom={false}
-            target={[0, 1.2, 0]}
-          />
+        <Canvas camera={{ position: [0,1.4,3.2], fov:35 }}>
+          <ambientLight intensity={0.7}/>
+          <directionalLight position={[1,2,3]} intensity={1}/>
+          <Avatar speaking={speaking}/>
+          <OrbitControls enablePan={false} enableRotate={false} enableZoom={false} target={[0,1.2,0]}/>
         </Canvas>
       </Stage>
 
       <Subtitles>{subtitle}</Subtitles>
 
-      <ChatBox onSubmit={handleSend}>
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="답변을 입력하세요…"
-        />
-        <button type="submit" disabled={loading}>
-          {loading ? "전송 중…" : "전송"}
+      <RecControls>
+        <button
+          className={`rec ${isRecording || loading ? "disabled" : ""}`}
+          disabled={isRecording || loading}
+          onClick={startRecording}
+        >
+          {isRecording ? "REC…" : "녹음 시작"}
         </button>
-      </ChatBox>
+        <button
+          className={`stop ${!isRecording || loading ? "disabled" : ""}`}
+          disabled={!isRecording || loading}
+          onClick={stopRecording}
+        >
+          {loading ? "업로드 중…" : "녹음 종료 & 전송"}
+        </button>
+      </RecControls>
     </Page>
   );
 }

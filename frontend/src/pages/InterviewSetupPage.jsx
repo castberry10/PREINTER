@@ -242,7 +242,6 @@ export default function InterviewSetupPage() {
 
   return (
     <InterviewSetupPageBlock
-      // initial={{ opacity:0, y:30 }}
       animate={{ opacity:1, y:0 }}
       transition={{ duration:0.8 }}
     >
@@ -262,7 +261,7 @@ export default function InterviewSetupPage() {
           value={interviewDuration}
           onChange={(e) => setInterviewDuration(parseInt(e.target.value))}
         >
-          <option value={1}>1분(테스트용)</option>
+          <option value={0.5}>30초 (테스트/시연용)</option>
           <option value={5}>5분</option>
           <option value={10}>10분</option>
           <option value={15}>15분</option>
@@ -282,30 +281,7 @@ export default function InterviewSetupPage() {
       </label>
 
       
-{/* 
-        <fieldset style={{ border: "none", marginTop: "1rem" }}>
-        <legend style={{ fontWeight: "bold" }}>면접 방식 선택</legend>
-        <label style={{ marginRight: "1rem" }}>
-          <input
-            type="radio"
-            name="mode"
-            value="chat"
-            checked={interviewMode === "chat"}
-            onChange={() => setInterviewMode("chat")}
-          />
-          채팅
-        </label>
-        <label>
-          <input
-            type="radio"
-            name="mode"
-            value="voice"
-            checked={interviewMode === "voice"}
-            onChange={() => setInterviewMode("voice")}
-          />
-          음성
-        </label>
-      </fieldset> */}
+
 
         <label>
           이력서 (PDF)
