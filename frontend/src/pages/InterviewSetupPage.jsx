@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence  } from 'framer-motion';
-import { Sparkles, PlayCircle } from 'lucide-react';
+import { Sparkles, PlayCircle, Zap } from 'lucide-react';
 import axios from "axios";   
 const drift = keyframes`
   0%   { background-position:   0% 50%; }
@@ -171,6 +171,7 @@ export default function InterviewSetupPage() {
   const [loading, setLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState("");
   const [interviewDuration, setInterviewDuration] = useState(10);
+  const [interviewMode, setInterviewMode] = useState("voice");
   useEffect(() => {
     if (!loading) {
       setLoadingMessage(""); 
@@ -216,11 +217,21 @@ export default function InterviewSetupPage() {
       );
 
       const { sessionId } = res.data;
-      navigate(`/interview/${sessionId}`, {
-        state: { resumeName: resume.name,
-          interviewDuration: interviewDuration
-         },
-      });
+      if(!sessionId) {
+        alert("면접 세션을 시작할 수 없습니다. 잠시 후 다시 시도해 주세요.");
+        setLoading(false);
+        return;
+      }
+
+      if (interviewMode === "voice") {
+        navigate(`/interview/${sessionId}/real`, {
+          state: { resumeName: resume.name, interviewDuration: interviewDuration }
+        });
+      } else {
+        navigate(`/interview/${sessionId}/text`, {
+          state: { resumeName: resume.name, interviewDuration: interviewDuration }
+        });
+      }
     } catch (err) {
       console.error(err);
       alert("면접 세션을 시작할 수 없습니다. 잠시 후 다시 시도해 주세요.");
@@ -258,6 +269,43 @@ export default function InterviewSetupPage() {
           <option value={20}>20분</option>
         </select>
       </label>
+
+      <label>
+        면접 방식 선택
+        <select
+          value={interviewMode}
+          onChange={(e) => setInterviewMode(e.target.value)}
+        >
+          <option value="chat">채팅</option>
+          <option value="voice">음성</option>
+        </select>
+      </label>
+
+      
+{/* 
+        <fieldset style={{ border: "none", marginTop: "1rem" }}>
+        <legend style={{ fontWeight: "bold" }}>면접 방식 선택</legend>
+        <label style={{ marginRight: "1rem" }}>
+          <input
+            type="radio"
+            name="mode"
+            value="chat"
+            checked={interviewMode === "chat"}
+            onChange={() => setInterviewMode("chat")}
+          />
+          채팅
+        </label>
+        <label>
+          <input
+            type="radio"
+            name="mode"
+            value="voice"
+            checked={interviewMode === "voice"}
+            onChange={() => setInterviewMode("voice")}
+          />
+          음성
+        </label>
+      </fieldset> */}
 
         <label>
           이력서 (PDF)

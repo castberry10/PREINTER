@@ -9,6 +9,7 @@ import InterviewSetupPage from './pages/InterviewSetupPage';
 import InterviewRoomPage from './pages/InterviewRoomPage';
 import InterviewResultPage from './pages/InterviewResultPage';
 import InterviewReplayPage from './pages/InterviewReplayPage';
+import InterviewRealRoomPage from './pages/InterviewRealRoomPage';
 import LoginPage from './pages/LoginPage';
 import axios from 'axios';
 
@@ -21,7 +22,8 @@ function App() {
         <Route path="/" element={<IntroPage />} />
           <Route path="/interview">
           <Route path="setup" element={<InterviewSetupPage />} />
-          <Route path=":sessionId" element={<InterviewRoomPage />} />
+          <Route path=":sessionId/text" element={<InterviewRoomPage />} />
+          <Route path=":sessionId/real" element={<InterviewRealRoomPage />} />
           <Route path=":sessionId/result" element={<InterviewResultPage />} />
           <Route path=":sessionId/replay" element={<InterviewReplayPage />} />
         </Route>

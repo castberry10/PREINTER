@@ -97,142 +97,156 @@ const Spinner = styled.div`
   animation: ${spin} 0.8s linear infinite;
 `;
 
-const getPolygonPoints = (scores, radius = 140, centerX = 200, centerY = 200) =>
-  Object.entries(scores)
-    .map(([_, v], i, arr) => {
-      const angle = (2 * Math.PI * i) / arr.length - Math.PI / 2;
-      const r = (v / 100) * radius;
-      const x = centerX + Math.cos(angle) * r;
-      const y = centerY + Math.sin(angle) * r;
-      return `${x},${y}`;
-    })
-    .join(' ');
+export default function InterviewResultPage() {
+  const navigate = useNavigate();
+  const { sessionId } = useParams();
 
-export default function InterviewResultPage(){
-  const navigate=useNavigate();
-  const{sessionId}=useParams();
-  const[data,setData]=useState(null);
-    const [loading, setLoading] = useState(false);
-    const [loadingMessage, setLoadingMessage] = useState("");
+  const [summary, setSummary] = useState(null);  
+  const [loading, setLoading] = useState(true);
 
-  /* 실제 API 호출
-  useEffect(()=>{
-    axios.get(`/api/interviews/${sessionId}/result`)
-         .then(res=>setData(res.data))
-         .catch(console.error);
-  },[sessionId]);
-  */
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await axios.post("/interview/result", { sessionId });
 
-  useEffect(()=>{
-    setData({
-      '면접결과':'불합격',
-      '면접관의 평가':'지원자는 질문에 대해 구체적인 답변을 제공하지 못하고, 자신이 생각하는 운동의 중요성만 강조했습니다. 응답 내용이 면접과 관련된 질문에 적절히 연결되지 않아 면접에서 원하는 정보를 효과적으로 전달하지 못했습니다.',
-      '면접관의 피드백':'질문에 대한 명확하고 구체적인 답변이 필요합니다. 특히 당신의 경험과 관련된 성과나 구체적인 사례를 들어 설명하는 것이 중요합니다. 문제를 해결하는 방법이나 접근 방식을 구체적으로 설명해 주세요.',
-      '면접관의 면접 팁':'인터뷰 시 주어진 질문에 직접적으로 답변하는 것에 집중하세요. 경험 기반으로 구체적인 사례를 제시하고 질문자의 관심에 맞게 답변하는 것이 중요합니다.',
-      '면접관의 점수':45,
-      '면접관의 상세 점수':{논리성:40,전문성:50,소통력:35,인성:60,창의성:50}
-    });
-  },[]);
+        const parsed = JSON.parse(data.evaluationSummary || "{}");
+        setSummary(parsed);                    
+      } catch (e) {
+        console.error(e);
+        alert("결과를 가져오지 못했습니다.");
+        navigate("/");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [sessionId, navigate]);
 
-  if(!data) return null;
-  const detail=data['면접관의 상세 점수'];
+  if (loading || !summary)
+    return (
+      <Wrapper>
+        <LoaderOverlay initial={{ opacity: 1 }} animate={{ opacity: 1 }}>
+          <Spinner />
+          <span>결과 분석 중…</span>
+        </LoaderOverlay>
+      </Wrapper>
+    );
 
-  return(
+  const status       = summary["면접결과"] ?? "";
+  const comment      = summary["면접관의 평가"] ?? "";
+  const feedback     = summary["면접관의 피드백"] ?? "";
+  const tip          = summary["면접관의 면접 팁"] ?? "";
+  const score        = summary["면접관의 점수"] ?? 0;
+  const detailScores = summary["면접관의 상세 점수"] ?? {};
+
+  return (
     <Wrapper>
-      <AnimatePresence>
-        {loading && (
-          <LoaderOverlay
-            key="loader"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.25 }}
-          >
-            <Spinner />  
-            <span>{loadingMessage}</span>
-          </LoaderOverlay>
-        )}
-      </AnimatePresence>
       <header>
-        <a href="/" className="logo"><Sparkles/> PREINTER</a>
-        <nav><a href="/login">Login</a></nav>
-        <button className="cta" onClick={()=>navigate('/')}><PlayCircle size={16}/> Home</button>
+        <a href="/" className="logo">
+          <Sparkles /> PREINTER
+        </a>
+        <nav>
+          <a href="/login">Login</a>
+        </nav>
+        <button className="cta" onClick={() => navigate("/")}>
+          <PlayCircle size={16} /> Home
+        </button>
       </header>
 
       <motion.section
         className="card"
-        initial={{opacity:0,y:40}}
-        animate={{opacity:1,y:0}}
-        transition={{duration:.8,ease:'easeOut'}}
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
       >
         <h2>면접 결과</h2>
-        <div className="status">{data['면접결과']} – <span>{data['면접관의 점수']}점</span></div>
+        <div className="status">
+          {status} – <span>{score}점</span>
+        </div>
 
-<div className="chart-wrapper">
-  <svg width="100%" height="100%" viewBox="0 0 400 400">
-    {[1, 0.8, 0.6, 0.4, 0.2].map((r, idx) => {
-      const n = Object.keys(detail).length;
-      const centerX = 200; 
-      const centerY = 200;
-      const pts = Array.from({ length: n }, (_, i) => {
-        const angle = (2 * Math.PI * i) / n - Math.PI / 2;
-        const x = centerX + Math.cos(angle) * 140 * r;
-        const y = centerY + Math.sin(angle) * 140 * r;
-        return `${x},${y}`;
-      }).join(' ');
-      return (
-        <polygon
-          key={idx}
-          points={pts}
-          fill={idx ? 'none' : '#e3f2fd'}
-          stroke="#90caf9"
-          strokeWidth={1}
-        />
-      );
-    })}
+        <div className="chart-wrapper">
+          <svg width="100%" height="100%" viewBox="0 0 400 400">
+            {[1, 0.8, 0.6, 0.4, 0.2].map((r, idx) => {
+              const n = Object.keys(detailScores).length;
+              const ring = Array.from({ length: n }, (_, i) => {
+                const angle = (2 * Math.PI * i) / n - Math.PI / 2;
+                return [
+                  200 + Math.cos(angle) * 140 * r,
+                  200 + Math.sin(angle) * 140 * r,
+                ].join(",");
+              }).join(" ");
+              return (
+                <polygon
+                  key={idx}
+                  points={ring}
+                  fill={idx ? "none" : "#e3f2fd"}
+                  stroke="#90caf9"
+                  strokeWidth={1}
+                />
+              );
+            })}
 
-    <polygon
-      points={getPolygonPoints(detail, 140, 200, 200)} 
-      fill="rgba(33,150,243,.4)"
-      stroke="#1976d2"
-      strokeWidth={2}
-    />
+            <polygon
+              points={getPolygonPoints(detailScores)}
+              fill="rgba(33,150,243,.4)"
+              stroke="#1976d2"
+              strokeWidth={2}
+            />
 
-    {Object.keys(detail).map((label, i) => {
-      const n = Object.keys(detail).length;
-      const angle = (2 * Math.PI * i) / n - Math.PI / 2;
-      const x = 200 + Math.cos(angle) * 170;
-      const y = 200 + Math.sin(angle) * 170;
-      return (
-        <text
-          key={label}
-          x={x}
-          y={y}
-          textAnchor="middle"
-          dominantBaseline="middle"
-          fontSize="17"
-          fill="#ffffffff"
-        >
-          {label}
-        </text>
-      );
-    })}
-  </svg>
-</div>
-
+            {Object.keys(detailScores).map((label, i, arr) => {
+              const angle = (2 * Math.PI * i) / arr.length - Math.PI / 2;
+              return (
+                <text
+                  key={label}
+                  x={200 + Math.cos(angle) * 170}
+                  y={200 + Math.sin(angle) * 170}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  fontSize="17"
+                  fill="#fff"
+                >
+                  {label}
+                </text>
+              );
+            })}
+          </svg>
+        </div>
 
         <div className="feedback-block">
-          <p><strong>면접관의 평가</strong><br/>{data['면접관의 평가']}</p>
-          <p><strong>면접관의 피드백</strong><br/>{data['면접관의 피드백']}</p>
-          <p><strong>면접관의 면접 팁</strong><br/>{data['면접관의 면접 팁']}</p>
+          <p>
+            <strong>면접관의 평가</strong>
+            <br />
+            {comment}
+          </p>
+          <p>
+            <strong>면접관의 피드백</strong>
+            <br />
+            {feedback}
+          </p>
+          <p>
+            <strong>면접관의 면접 팁</strong>
+            <br />
+            {tip}
+          </p>
         </div>
 
         <div className="actions">
-          <button onClick={()=>navigate('/')}>홈으로</button>
-          <button onClick={()=>navigate(`/interview/${sessionId}/replay`)}>리플레이</button>
+          <button onClick={() => navigate("/")}>홈으로</button>
+          <button onClick={() => navigate(`/interview/${sessionId}/replay`)}>
+            리플레이
+          </button>
         </div>
       </motion.section>
     </Wrapper>
   );
 }
 
+function getPolygonPoints(scores, radius = 140, cx = 200, cy = 200) {
+  const entries = Object.entries(scores);
+  return entries
+    .map(([_, v], i) => {
+      const angle = (2 * Math.PI * i) / entries.length - Math.PI / 2;
+      const r = (Number(v) / 100) * radius;
+      return `${cx + Math.cos(angle) * r},${cy + Math.sin(angle) * r}`;
+    })
+    .join(" ");
+}

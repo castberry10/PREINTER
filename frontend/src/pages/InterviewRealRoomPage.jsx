@@ -138,7 +138,7 @@ function Avatar({ speaking }) {
   );
 }
 
-export default function InterviewRoomPage() {
+export default function InterviewRealRoomPage() {
 
   const navigate = useNavigate();
   const { sessionId } = useParams();
