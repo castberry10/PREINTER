@@ -4,7 +4,7 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, useGLTF } from "@react-three/drei";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import axios from "axios";
-import MicRecorder from 'mic-recorder-to-mp3-fixed';
+  import MicRecorder from 'mic-recorder-to-mp3-fixed';
 import * as THREE from "three";
 
 const Page = styled.div`
@@ -170,6 +170,7 @@ export default function InterviewRealRoomPage() {
 
   const [isRecording, setIsRecording] = useState(false);
   const [loading,     setLoading]     = useState(false);
+  const [mouthVal, setMouthVal] = useState(0);
 
   const recorder   = useRef(new MicRecorder({ bitRate: 128 }));
   const speakTimer = useRef(null);
@@ -178,7 +179,7 @@ export default function InterviewRealRoomPage() {
   const initialEnd = savedEnd && savedEnd > Date.now()
       ? savedEnd
       : Date.now() + interviewDuration*60*1000;
-  const endTimeRef = useRef(initialEnd);
+  const endTimeRef = useRef(initialEnd);  
   localStorage.setItem(END_KEY, initialEnd.toString());
 
   const finishInterview = () => {
@@ -194,6 +195,7 @@ export default function InterviewRealRoomPage() {
   };
 
   const fetchQuestion = async () => {
+    
     if (Date.now() >= endTimeRef.current) {
       finishInterview();
       return;
@@ -202,14 +204,33 @@ export default function InterviewRealRoomPage() {
       const { data } = await axios.post(
         "/interview/question/audio",
         { sessionId },
-        { responseType: "arraybuffer" }   // <-- 바이너리
+        { responseType: "arraybuffer" }
       );
 
       const blob = new Blob([data], { type: "audio/mpeg" });
       const url  = URL.createObjectURL(blob);
       const audio = new Audio(url);
+      const ctx       = new (window.AudioContext || window.webkitAudioContext)();
+      const srcNode   = ctx.createMediaElementSource(audio);
+      const analyser  = ctx.createAnalyser();
+      analyser.fftSize = 1024;
+      const dataArray = new Uint8Array(analyser.fftSize);
+      srcNode.connect(analyser);
+      srcNode.connect(ctx.destination);
+
+      const pump = () => {
+        analyser.getByteTimeDomainData(dataArray);
+        let sum = 0;
+        for (const v of dataArray) { const x = (v-128)/128; sum += x*x; }
+        const rms = Math.sqrt(sum / dataArray.length); 
+        const mapped = Math.min(1, rms * 3);    
+        setMouthVal(mapped);  
+        if (!audio.paused) requestAnimationFrame(pump);
+      };
+      requestAnimationFrame(pump);
+
       audio.play();
-      startSpeaking(blob.size / 16000); 
+      startSpeaking(audio.duration * 1000);
 
       setSubtitle("질문을 듣고 답변을 녹음하세요.");
     } catch (err) {

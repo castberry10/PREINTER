@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence  } from 'framer-motion';
-import { Sparkles, PlayCircle, Zap } from 'lucide-react';
+import { Sparkles, PlayCircle, Zap, MicOff } from 'lucide-react';
 import axios from "axios";   
 const drift = keyframes`
   0%   { background-position:   0% 50%; }
@@ -165,6 +165,83 @@ const extractTextFromPDF = async (file) => {
   return text;
 };
 
+const checkMicPermission = async () => {
+  if (!navigator.permissions) return "prompt";  
+  try {
+    const status = await navigator.permissions.query({ name: "microphone" });
+    return status.state;                               
+  } catch {
+    return "prompt";
+  }
+};
+
+const MicPermissionModal = ({ onClose }) => {
+  const ua = navigator.userAgent.toLowerCase();
+  const browser = ua.includes('edg')
+    ? 'edge'
+    : ua.includes('chrome')
+      ? 'chrome'
+      : ua.includes('safari')
+        ? 'safari'
+        : 'other';
+
+  const guide = {
+    chrome: (
+      <>
+        <li>주소창 왼쪽 아이콘 클릭</li>
+        <li><b>사이트 설정</b> → <b>마이크 &gt; 허용</b></li>
+      </>
+    ),
+    edge: (
+      <>
+        <li>주소창 왼쪽 아이콘 클릭</li>
+        <li><b>권한</b> 섹션에서 <b>마이크 &gt; 허용</b></li>
+      </>
+    ),
+    safari: (
+      <>
+        <li>상단 메뉴 <b>Safari ▸ 이 웹사이트 설정…</b></li>
+        <li><b>마이크 허용</b> 항목을 <b>허용</b>으로 변경</li>
+      </>
+    ),
+    other: <li>브라우저 설정에서 마이크 권한을 허용해 주세요.</li>,
+  }[browser];
+
+  return (
+    <LoaderOverlay        
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+    >
+      <MicOff size={56} color="#f8fafc" />
+      <div style={{ textAlign: 'center', maxWidth: 280 }}>
+        <p style={{ marginBottom: 12, lineHeight: 1.4 }}>
+          음성 면접을 위해 <b>마이크 권한</b>이 필요합니다.
+          <br /> 마이크 접근을 허용해 주세요.
+        </p>
+        <ul style={{ textAlign: 'left', fontSize: '0.85rem', lineHeight: 1.5 }}>
+          {guide}
+        </ul>
+        <button
+          style={{
+            marginTop: 18,
+            padding: '0.5rem 1.4rem',
+            border: 'none',
+            borderRadius: 8,
+            background: '#f8fafc',
+            color: '#0f172a',
+            fontWeight: 600,
+            cursor: 'pointer',
+          }}
+          onClick={onClose}
+        >
+          확인
+        </button>
+      </div>
+    </LoaderOverlay>
+  );
+};
 export default function InterviewSetupPage() {
   const navigate = useNavigate();
   const [resume, setResume] = useState(null);
@@ -172,6 +249,8 @@ export default function InterviewSetupPage() {
   const [loadingMessage, setLoadingMessage] = useState("");
   const [interviewDuration, setInterviewDuration] = useState(10);
   const [interviewMode, setInterviewMode] = useState("voice");
+  const [micDenied, setMicDenied] = useState(false);
+  
   useEffect(() => {
     if (!loading) {
       setLoadingMessage(""); 
@@ -202,7 +281,22 @@ export default function InterviewSetupPage() {
       alert("이력서를 먼저 업로드해 주세요.");
       return;
     }
-    
+
+    if (interviewMode === "voice") {
+      const micState = await checkMicPermission();
+
+      if (micState === "denied") {    
+        setMicDenied(true);
+        return;
+      }
+
+      try {
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch {
+        setMicDenied(true);     
+        return;
+      }
+    }
 
 
     try {
@@ -261,7 +355,7 @@ export default function InterviewSetupPage() {
           value={interviewDuration}
           onChange={(e) => setInterviewDuration(parseInt(e.target.value))}
         >
-          <option value={0.5}>30초 (테스트/시연용)</option>
+          <option value={1}>1분 (테스트/시연용)</option>
           <option value={5}>5분</option>
           <option value={10}>10분</option>
           <option value={15}>15분</option>
@@ -307,6 +401,9 @@ export default function InterviewSetupPage() {
           </LoaderOverlay>
         )}
       </AnimatePresence>
+      {micDenied && (
+        <MicPermissionModal onClose={() => setMicDenied(false)} />
+      )}
     </InterviewSetupPageBlock>
   );
 }
