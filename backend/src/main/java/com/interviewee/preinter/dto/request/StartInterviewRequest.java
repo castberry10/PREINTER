@@ -8,9 +8,15 @@ import lombok.Setter;
 @Getter
 @Setter
 public class StartInterviewRequest {
-    private MultipartFile resumeFile;
+//    private MultipartFile resumeFile;
+//
+//    public StartInterviewRequest(MultipartFile resumeFile) {
+//        this.resumeFile = resumeFile;
+//    }
 
-    public StartInterviewRequest(MultipartFile resumeFile) {
+    private String resumeFile;
+
+    public StartInterviewRequest(String resumeFile) {
         this.resumeFile = resumeFile;
     }
 }

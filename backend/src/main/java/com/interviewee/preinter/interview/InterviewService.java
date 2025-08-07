@@ -31,8 +31,9 @@ public class InterviewService {
     /** 1) 인터뷰 시작 */
     public StartInterviewResponse startInterview(StartInterviewRequest req) {
         String sessionId = UUID.randomUUID().toString();
+        String rawTextData = req.getResumeFile();
         // 문자열 추출
-        String rawTextData = documentService.extractText(req.getResumeFile());
+//        String rawTextData = documentService.extractText(req.getResumeFile());
         // 문자열 파싱
         InterviewSession session = new InterviewSession(sessionId, chatService.summarize(rawTextData));
         repo.save(session);
