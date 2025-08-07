@@ -7,6 +7,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,12 +29,15 @@ public class GoogleSttService {
     public String transcribe(MultipartFile audioFile) throws IOException {
         // 파일을 바이트로 읽어들임
         ByteString content = ByteString.copyFrom(audioFile.getBytes());
+//    public List<WordInfo> transcribeWithTimestamps(MultipartFile audioFile) throws IOException {
+//        ByteString content = ByteString.copyFrom(audioFile.getBytes());
 
         // 오디오 구성: 인코딩, 샘플링, 언어
         RecognitionConfig config = RecognitionConfig.newBuilder()
                 .setEncoding(RecognitionConfig.AudioEncoding.MP3)
                 .setSampleRateHertz(44100)
                 .setLanguageCode("ko-KR")
+                .setEnableWordTimeOffsets(true)
                 .build();
         RecognitionAudio audio = RecognitionAudio.newBuilder()
                 .setContent(content)
@@ -47,5 +52,12 @@ public class GoogleSttService {
                 .flatMap(alts -> alts.stream().limit(1))
                 .map(a -> a.getTranscript())
                 .collect(Collectors.joining(" "));
+//         WordInfo 수집: 가장 높은 신뢰도 alternative 에서
+//        List<WordInfo> words = new ArrayList<>();
+//        for (SpeechRecognitionResult result : response.getResultsList()) {
+//            SpeechRecognitionAlternative alt = result.getAlternativesList().get(0);
+//            words.addAll(alt.getWordsList());
+//        }
+//        return words;
     }
 }
