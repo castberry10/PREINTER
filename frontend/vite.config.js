@@ -4,9 +4,9 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   server: {
-    host: true, 
+    host: true,
     port: 80,
-    allowedHosts: ['preinter.castberry.kr']
+    allowedHosts: ['preinter.castberry.kr', 'aoaoaoqq.com']
   },
   plugins: [react()],
 })
