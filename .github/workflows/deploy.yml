@@ -40,10 +40,10 @@ jobs:
           chmod +x gradlew
           ./gradlew clean build -x test --no-daemon
 
-      # 5) 아티팩트 준비
+     # 5) 아티팩트 준비 (plain.jar 제외)
       - name: Prepare artifact
         run: |
-          JAR_FILE=$(find backend/build/libs -type f -name "*.jar" | head -n 1)
+          JAR_FILE=$(find backend/build/libs -type f -name "*.jar" ! -name "*-plain.jar" | head -n 1)
           cp "$JAR_FILE" PREINTER.jar
           
 
