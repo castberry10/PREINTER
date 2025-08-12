@@ -7,7 +7,6 @@ import lombok.Setter;
 @Setter
 public class SubmitAnswerRequest {
     private String sessionId;
-    private String SpeedScore;
     private String answer;
 
     public SubmitAnswerRequest(String sessionId, String answer) {
