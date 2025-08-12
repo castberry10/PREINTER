@@ -2,6 +2,8 @@ package com.interviewee.preinter.speech;
 
 import com.google.cloud.speech.v1.*;
 import com.google.protobuf.ByteString;
+import com.interviewee.preinter.speech.score.TranscriptionResult;
+import com.interviewee.preinter.speech.score.Word;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -27,37 +29,50 @@ public class GoogleSttService {
      * @return 인식된 한국어 텍스트
      */
     public String transcribe(MultipartFile audioFile) throws IOException {
-        // 파일을 바이트로 읽어들임
         ByteString content = ByteString.copyFrom(audioFile.getBytes());
-//    public List<WordInfo> transcribeWithTimestamps(MultipartFile audioFile) throws IOException {
-//        ByteString content = ByteString.copyFrom(audioFile.getBytes());
-
-        // 오디오 구성: 인코딩, 샘플링, 언어
         RecognitionConfig config = RecognitionConfig.newBuilder()
                 .setEncoding(RecognitionConfig.AudioEncoding.MP3)
                 .setSampleRateHertz(44100)
                 .setLanguageCode("ko-KR")
                 .setEnableWordTimeOffsets(true)
                 .build();
-        RecognitionAudio audio = RecognitionAudio.newBuilder()
-                .setContent(content)
-                .build();
-
-        // 동기식 인식 호출
+        RecognitionAudio audio = RecognitionAudio.newBuilder().setContent(content).build();
         RecognizeResponse response = speechClient.recognize(config, audio);
 
-        // 가장 높은 신뢰도의 대체안들만 이어붙여 반환
         return response.getResultsList().stream()
                 .map(SpeechRecognitionResult::getAlternativesList)
                 .flatMap(alts -> alts.stream().limit(1))
-                .map(a -> a.getTranscript())
+                .map(SpeechRecognitionAlternative::getTranscript)
                 .collect(Collectors.joining(" "));
-//         WordInfo 수집: 가장 높은 신뢰도 alternative 에서
-//        List<WordInfo> words = new ArrayList<>();
-//        for (SpeechRecognitionResult result : response.getResultsList()) {
-//            SpeechRecognitionAlternative alt = result.getAlternativesList().get(0);
-//            words.addAll(alt.getWordsList());
-//        }
-//        return words;
+    }
+
+    public TranscriptionResult transcribeWithTimestamps(MultipartFile audioFile) throws IOException {
+        ByteString content = ByteString.copyFrom(audioFile.getBytes());
+        RecognitionConfig config = RecognitionConfig.newBuilder()
+                .setEncoding(RecognitionConfig.AudioEncoding.MP3)
+                .setSampleRateHertz(44100)
+                .setLanguageCode("ko-KR")
+                .setEnableWordTimeOffsets(true)
+                .build();
+        RecognitionAudio audio = RecognitionAudio.newBuilder().setContent(content).build();
+        RecognizeResponse response = speechClient.recognize(config, audio);
+
+        String transcript = response.getResultsList().stream()
+                .map(SpeechRecognitionResult::getAlternativesList)
+                .flatMap(alts -> alts.stream().limit(1))
+                .map(SpeechRecognitionAlternative::getTranscript)
+                .collect(Collectors.joining(" "));
+
+        List<Word> words = new ArrayList<>();
+        for (SpeechRecognitionResult r : response.getResultsList()) {
+            if (r.getAlternativesCount() == 0) continue;
+            var alt = r.getAlternatives(0);
+            for (WordInfo wi : alt.getWordsList()) {
+                double start = wi.getStartTime().getSeconds() + wi.getStartTime().getNanos()/1_000_000_000.0;
+                double end   = wi.getEndTime().getSeconds()   + wi.getEndTime().getNanos()  /1_000_000_000.0;
+                words.add(new Word(wi.getWord(), start, end));
+            }
+        }
+        return new TranscriptionResult(transcript, words);
     }
 }
