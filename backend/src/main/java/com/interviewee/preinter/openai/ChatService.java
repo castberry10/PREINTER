@@ -3,6 +3,7 @@ package com.interviewee.preinter.openai;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.interviewee.preinter.interview.InterviewSession;
+import com.interviewee.preinter.speech.score.SpeakingMetricsService;
 import com.openai.client.OpenAIClient;
 import com.openai.client.okhttp.OpenAIOkHttpClient;
 import com.openai.models.ChatModel;
@@ -11,15 +12,17 @@ import com.openai.models.evals.runs.RunListResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
 public class ChatService {
     private final OpenAIClient client;
+    private final SpeakingMetricsService speakingMetricsService;
+
+    private static double round1(double v){ return Math.round(v*10.0)/10.0; }
+    private static double round2(double v){ return Math.round(v*100.0)/100.0; }
+    private static double round3(double v){ return Math.round(v*1000.0)/1000.0; }
 
     // 질문
     public String askWithHistory(InterviewSession session) throws JsonProcessingException {
@@ -73,9 +76,8 @@ public class ChatService {
     // 면접 총 평가
     public String askEvaluation(InterviewSession session) throws JsonProcessingException {
 
-        // 과거 질문·답변 히스토리를 한 쌍씩
+        // (기존) 히스토리 JSON
         List<String> history = session.getHistory();
-
         List<Map<String, String>> historyWithRole = new ArrayList<>();
         for (int i = 0; i < history.size(); i++) {
             String msg = history.get(i);
@@ -88,48 +90,62 @@ public class ChatService {
         ObjectMapper mapper = new ObjectMapper();
         String historyJson = mapper.writeValueAsString(historyWithRole);
 
+        // (신규) Redis에서 스피킹 지표 조회
+        var metrics = speakingMetricsService.getForEvaluation(session.getId());
+        Map<String, Object> speaking = new LinkedHashMap<>();
+        if (metrics == null) {
+            speaking.put("available", false);
+        } else {
+            speaking.put("available", metrics.available());
+            if (metrics.available()) {
+                speaking.put("score", round1(metrics.score()));
+                speaking.put("articulationRate", round2(metrics.articulationRate()));
+                speaking.put("pauseRatio", round3(metrics.pauseRatio()));
+                speaking.put("longPauseCount", metrics.longPauseCount());
+            }
+        }
+        String speakingJson = mapper.writeValueAsString(speaking);
+
         String prompt = String.format(
                 """
-                
                 [이력서]
                 %s
-                
+    
                 [대화기록]
                 %s
-        
+    
+                [발화지표]
+                %s
+    
                 위 대화기록(인터뷰기록)을 바탕으로 이력서를 참고하여 지원자의 평가를 진행해야해. 
-                평가는 지금 인터뷰과정에서의 평가이기에 이력서는 참고용도로만 사용해야하고 면접기록에 대해서 피드백과 종합적인 인터뷰 역량등을 살펴봐야해. 
+                평가는 지금 인터뷰과정에서의 평가이기에 이력서는 참고용도로만 사용하고,
+                발화지표(speaking)는 available이 true일 때만 '소통력'과 총점에 보조신호로 사용해.
                 
-                응답은 아래형식을 따라줘. 
-                        {
-                                        
-                        "면접결과": "",
-                        "면접관의 평가": "",
-                        "면접관의 피드백":"",
-                        "면접관의 면접 팁": "",
-                        "면접관의 점수" : 0,
-                        "면접관의 상세 점수" : {
-                            "논리성": 0,
-                            "전문성": 0,
-                            "소통력": 0,
-                            "인성": 0,
-                            "창의성": 0
-                         }
-                        }
-                
-                응답을 파싱해야 하니 형식을 지켜줘.
-                응답에 마크다운은 사용하지말아줘.
-                위 형식에 따라 상세히 평가하고 점수를 매겨줘. 각 점수는 0부터 100까지로 해줘.
+                응답은 아래 형식을 정확히 지켜서 JSON으로만 반환해. 마크다운 금지.
+                {
+                  "면접결과": "",
+                  "면접관의 평가": "",
+                  "면접관의 피드백": "",
+                  "면접관의 면접 팁": "",
+                  "면접관의 점수": 0,
+                  "면접관의 상세 점수": {
+                    "논리성": 0,
+                    "전문성": 0,
+                    "소통력": 0,
+                    "인성": 0,
+                    "창의성": 0
+                  }
+                }
+                각 점수는 0부터 100까지로 매겨.
                 """,
-                session.getResumeText()
-                ,
-                historyJson
+                session.getResumeText(),
+                historyJson,
+                speakingJson
         );
 
         ChatCompletionCreateParams.Builder b = ChatCompletionCreateParams.builder()
                 .model(ChatModel.O4_MINI)
-                .addSystemMessage("넌 인터뷰를 진행하는 인사담당자야. ")
-                // 이력서는 한 번만
+                .addSystemMessage("넌 인터뷰 평가자야. 발화지표가 있으면 소통력/총점 산정에 참고하되, 내용·논리·전문성을 우선 평가해.")
                 .addUserMessage(prompt);
 
         ChatCompletionCreateParams params = b.build();
