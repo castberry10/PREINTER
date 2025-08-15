@@ -373,10 +373,6 @@ export default function InterviewSetupPage() {
           <option value="voice">음성</option>
         </select>
       </label>
-
-      
-
-
         <label>
           이력서 (PDF)
           <input className="fileinput"type="file" accept=".pdf" onChange={handleFileChange} />
