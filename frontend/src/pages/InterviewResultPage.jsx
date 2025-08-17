@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState,useRef } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Sparkles, PlayCircle } from 'lucide-react';
 import { motion, AnimatePresence  } from 'framer-motion';
 import axios from 'axios';
-
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 const drift = keyframes`
   0% {background-position:0% 50%;}
   50% {background-position:100% 50%;}
@@ -97,12 +98,34 @@ const Spinner = styled.div`
   animation: ${spin} 0.8s linear infinite;
 `;
 
+
+const Printable = styled.div`
+  position: absolute; left: -99999px; top: 0; /* 화면에 보이지 않게 */
+  width: 800px; background: #ffffff; color: #0f172a; padding: 40px;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, 'Noto Sans', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+
+  h1 { font-size: 24px; margin: 0 0 10px; }
+  h2 { font-size: 18px; margin: 24px 0 10px; text-align: left; }
+  .meta { font-size: 12px; color: #475569; margin-bottom: 16px; }
+  .row { display: flex; gap: 24px; align-items: flex-start; }
+  .scoreBox { min-width: 200px; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 16px; }
+  .scoreValue { font-size: 28px; font-weight: 800; color: #1d4ed8; }
+  .table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  .table th, .table td { border: 1px solid #e2e8f0; padding: 8px 10px; font-size: 12px; }
+  .table th { background: #f8fafc; text-align: left; }
+  .section { margin-top: 18px; line-height: 1.65; font-size: 13px; white-space: pre-wrap; text-align: left; }
+  .chartWrap { width: 360px; height: 360px; }
+`;
 export default function InterviewResultPage() {
   const navigate = useNavigate();
   const { sessionId } = useParams();
 
   const [summary, setSummary] = useState(null);  
   const [loading, setLoading] = useState(true);
+
+  const [exporting, setExporting] = useState(false);
+  const pdfTopRef = useRef(null);
+  const pdfBottomRef = useRef(null);
 
   useEffect(() => {
     (async () => {
@@ -137,7 +160,141 @@ export default function InterviewResultPage() {
   const tip          = summary["면접관의 면접 팁"] ?? "";
   const score        = summary["면접관의 점수"] ?? 0;
   const detailScores = summary["면접관의 상세 점수"] ?? {};
+  const handleExportPDF = async () => {
+    try {
+      setExporting(true);
 
+      const makeImage = async (el) => {
+        const canvas = await html2canvas(el, {
+          scale: 2,
+          backgroundColor: '#ffffff',
+          useCORS: true,
+        });
+        return canvas.toDataURL('image/png');
+      };
+
+      const imgTop = await makeImage(pdfTopRef.current);
+      const imgBottom = await makeImage(pdfBottomRef.current);
+
+      const doc = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 10;
+
+      const addFullWidthImage = (dataUrl) => {
+        const img = new Image();
+        return new Promise((resolve) => {
+          img.onload = () => {
+            const w = pageWidth - margin * 2;
+            const h = (img.height / img.width) * w;
+            doc.addImage(dataUrl, 'PNG', margin, margin, w, h);
+            resolve(h);
+          };
+          img.src = dataUrl;
+        });
+      };
+
+      let usedHeight = await addFullWidthImage(imgTop);
+      const remaining = pageHeight - margin - usedHeight - margin;
+      const bottomImg = new Image();
+      await new Promise((resolve) => {
+        bottomImg.onload = () => {
+          const w = pageWidth - margin * 2;
+          const h = (bottomImg.height / bottomImg.width) * w;
+
+          if (h <= remaining) {
+            doc.addImage(bottomImg, 'PNG', margin, margin + usedHeight + 5, w, h);
+          } else {
+            doc.addPage();
+            doc.addImage(bottomImg, 'PNG', margin, margin, w, h);
+          }
+          resolve();
+        };
+        bottomImg.src = imgBottom;
+      });
+
+
+
+      const pages = doc.getNumberOfPages();
+
+      const makeWatermarkDataURL = (text) => {
+        const size = 500;
+        const angle = -Math.PI / 4;
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+
+        ctx.clearRect(0, 0, size, size);
+        ctx.save();
+        ctx.translate(size / 2, size / 2);
+        ctx.rotate(angle);
+
+        ctx.font = 'normal 30px Helvetica, Arial, sans-serif';
+        ctx.fillStyle = 'rgba(150,150,150,0.15)'; 
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, 0, 0);
+        ctx.restore();
+
+        return canvas.toDataURL('image/png');
+      };
+      const makeWatermarkDataURL2 = (text = 'PREINTER') => {
+        const size = 500; 
+        const angle = -Math.PI / 4; 
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+
+        ctx.clearRect(0, 0, size, size);
+        ctx.save();
+        ctx.translate(size / 2, size / 2);
+        ctx.rotate(angle);
+
+
+        ctx.font = 'normal 120px Helvetica, Arial, sans-serif';
+        ctx.fillStyle = 'rgba(150,150,150,0.15)'; 
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, 0, 0);
+        ctx.restore();
+
+        return canvas.toDataURL('image/png');
+      };
+      const watermarkUrl = makeWatermarkDataURL(sessionId);
+      const watermarkUrl2 = makeWatermarkDataURL2('PREINTER');
+      for (let i = 1; i <= pages; i++) {
+        doc.setPage(i);
+        const wmWidth = pageWidth * 0.6;               
+        const img = new Image();
+        await new Promise((resolve) => {
+          img.onload = () => {
+            const ratio = img.height / img.width;
+            const wmHeight = wmWidth * ratio;
+            const x = (pageWidth - wmWidth) / 2;
+            const y = (pageHeight - wmHeight) / 2;
+            doc.addImage(watermarkUrl2, 'PNG', x-7, y-7, wmWidth, wmHeight);
+            doc.addImage(watermarkUrl, 'PNG', x+7, y+7, wmWidth, wmHeight);
+            resolve();
+          };
+          img.src = watermarkUrl2;
+        });
+
+        doc.setFontSize(10);
+        doc.setTextColor(0, 0, 0);
+        doc.text(`Page ${i} / ${pages}`, pageWidth / 2, pageHeight - 6, { align: 'center' });
+     }
+
+      const filename = `PREINTER_${sessionId}_면접결과.pdf`;
+      doc.save(filename);
+    } catch (err) {
+      console.error(err);
+      alert('PDF 생성에 실패했어요. 다시 시도해 주세요.');
+    } finally {
+      setExporting(false);
+    }
+  };
   return (
     <Wrapper>
       <header>
@@ -234,8 +391,109 @@ export default function InterviewResultPage() {
           <button onClick={() => navigate(`/interview/${sessionId}/replay`)}>
             리플레이
           </button>
+          <button onClick={handleExportPDF} disabled={exporting}>
+            {exporting ? 'PDF 생성 중…' : '상세 리포트 (PDF) 출력'}
+          </button>
         </div>
       </motion.section>
+      <Printable aria-hidden>
+        <div ref={pdfTopRef}>
+          <h1>PREINTER 면접 결과 리포트</h1>
+          <div className="meta">
+            세션 ID: {sessionId} · 생성일시: {new Date().toLocaleString('ko-KR')}
+          </div>
+
+          <div className="row">
+            <div className="scoreBox">
+              <div style={{fontSize:14, fontWeight:700, marginBottom:6}}>면접 결과</div>
+              <div style={{fontSize:13, marginBottom:10}}>{status}</div>
+              <div className="scoreValue">{score}점</div>
+            </div>
+
+            <div className="chartWrap">
+              <svg width="100%" height="100%" viewBox="0 0 400 400">
+                {[1, 0.8, 0.6, 0.4, 0.2].map((r, idx) => {
+                  const n = Object.keys(detailScores).length;
+                  const ring = Array.from({ length: n }, (_, i) => {
+                    const angle = (2 * Math.PI * i) / n - Math.PI / 2;
+                    return [
+                      200 + Math.cos(angle) * 140 * r,
+                      200 + Math.sin(angle) * 140 * r,
+                    ].join(",");
+                  }).join(" ");
+                  return (
+                    <polygon
+                      key={idx}
+                      points={ring}
+                      fill={idx ? "none" : "#eef2ff"}
+                      stroke="#c7d2fe"
+                      strokeWidth={1}
+                    />
+                  );
+                })}
+
+                <polygon
+                  points={getPolygonPoints(detailScores)}
+                  fill="rgba(59,130,246,.35)"
+                  stroke="#1d4ed8"
+                  strokeWidth={2}
+                />
+
+                {Object.keys(detailScores).map((label, i, arr) => {
+                  const angle = (2 * Math.PI * i) / arr.length - Math.PI / 2;
+                  return (
+                    <text
+                      key={label}
+                      x={200 + Math.cos(angle) * 170}
+                      y={200 + Math.sin(angle) * 170}
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                      fontSize="12"
+                      fill="#0f172a"
+                    >
+                      {label}
+                    </text>
+                  );
+                })}
+              </svg>
+            </div>
+          </div>
+
+          <h2>상세 점수</h2>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>항목</th>
+                <th>점수(0~100)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Object.entries(detailScores).map(([k, v]) => (
+                <tr key={k}>
+                  <td>{k}</td>
+                  <td>{v}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div ref={pdfBottomRef} style={{marginTop: 16}}>
+          <h2>면접관의 평가</h2>
+          <div className="section">{comment}</div>
+
+          <h2>면접관의 피드백</h2>
+          <div className="section">{feedback}</div>
+
+        </div>
+      </Printable>
+
+      {exporting && (
+        <LoaderOverlay initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+          <Spinner />
+          <span>PDF 생성 중…</span>
+        </LoaderOverlay>
+      )}
     </Wrapper>
   );
 }
