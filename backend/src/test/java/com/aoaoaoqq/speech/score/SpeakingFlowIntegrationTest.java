@@ -95,8 +95,8 @@ public class SpeakingFlowIntegrationTest {
         session.recordAnswer("대규모 트래픽 상황에서 세션 일관성 보장을 위해 ...");
 
         // 실제 GCP 호출 + SpeedScore 계산 + Redis 저장
-        try (InputStream in = new ClassPathResource("fast.mp3").getInputStream()) {
-            MultipartFile file = new MockMultipartFile("file", "fast.mp3", MediaType.APPLICATION_OCTET_STREAM_VALUE, in);
+        try (InputStream in = new ClassPathResource("scoreTest.mp3").getInputStream()) {
+            MultipartFile file = new MockMultipartFile("file", "scoreTest.mp3", MediaType.APPLICATION_OCTET_STREAM_VALUE, in);
             speakingMetricsService.computeAndStore(SESSION_ID, file);
         }
 
@@ -117,6 +117,11 @@ public class SpeakingFlowIntegrationTest {
         var json = new com.fasterxml.jackson.databind.ObjectMapper()
                 .writerWithDefaultPrettyPrinter()
                 .writeValueAsString(tmp);
-        System.out.println("🗣️ SpeedScore JSON:\n" + json);
+        System.out.println("SpeedScore JSON:\n" + json);
+//        System.out.println("score: 총점수");
+//        System.out.println("articulationRate: 침묵 제외 속도(음절/초)");
+//        System.out.println("pauseRatio: 총 침묵 / 전체");
+//        System.out.println("longPauseCount: >= 1.0s 긴 침묵 개수");
+
     }
 }
