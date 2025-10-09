@@ -4,13 +4,16 @@ package com.aoaoaoqq.speech.score;
 import com.interviewee.preinter.Application;
 import com.interviewee.preinter.interview.InterviewSession;
 import com.interviewee.preinter.openai.ChatService;
+import com.interviewee.preinter.speech.WhisperSttService;
 import com.interviewee.preinter.speech.score.SpeakingMetrics;
 import com.interviewee.preinter.speech.score.SpeakingMetricsService;
 import com.interviewee.preinter.speech.score.SpeakingMetricsStoreService;
+import com.interviewee.preinter.speech.score.TranscriptionResult;
 import com.openai.client.OpenAIClient;
 import com.openai.models.chat.completions.ChatCompletion;
 import com.openai.models.chat.completions.ChatCompletionCreateParams;
 import com.openai.services.blocking.chat.ChatCompletionService;
+import org.checkerframework.checker.units.qual.A;
 import org.junit.jupiter.api.*;
 import org.mockito.Answers;
 import org.mockito.Mockito;
@@ -35,14 +38,16 @@ import static org.mockito.ArgumentMatchers.any;
 
 
 @SpringBootTest(
-        classes = Application.class
+        classes = Application.class,
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
 public class SpeakingFlowIntegrationTest {
     private static final String SESSION_ID = "it-session-voice-001";
 
     @Autowired private SpeakingMetricsService speakingMetricsService;   // 실제 GCP 호출 포함
     @Autowired private SpeakingMetricsStoreService store;               // 실제 Redis
-    @Autowired private ChatService chatService;                         // ✅ 네가 만든 서비스 사용!
+    @Autowired private ChatService chatService;                         //
+    @Autowired private WhisperSttService sttService;
 
     @MockitoBean
     private OpenAIClient openAIClient;                                  // SDK 클라이언트만 모킹
@@ -95,9 +100,10 @@ public class SpeakingFlowIntegrationTest {
         session.recordAnswer("대규모 트래픽 상황에서 세션 일관성 보장을 위해 ...");
 
         // 실제 GCP 호출 + SpeedScore 계산 + Redis 저장
-        try (InputStream in = new ClassPathResource("scoreTest.mp3").getInputStream()) {
-            MultipartFile file = new MockMultipartFile("file", "scoreTest.mp3", MediaType.APPLICATION_OCTET_STREAM_VALUE, in);
-            speakingMetricsService.computeAndStore(SESSION_ID, file);
+        try (InputStream in = new ClassPathResource("scoreTestMike.mp3").getInputStream()) {
+            MultipartFile file = new MockMultipartFile("file", "scoreTestMike.mp3", MediaType.APPLICATION_OCTET_STREAM_VALUE, in);
+            TranscriptionResult tr = sttService.transcribeWithTimestamps(file);
+            speakingMetricsService.computeAndStore(SESSION_ID, tr);
         }
 
         // Redis 검증(간단)

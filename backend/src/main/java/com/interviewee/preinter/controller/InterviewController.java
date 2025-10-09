@@ -6,7 +6,9 @@ import com.interviewee.preinter.dto.response.*;
 import com.interviewee.preinter.interview.InterviewService;
 import com.interviewee.preinter.speech.GoogleSttService;
 import com.interviewee.preinter.speech.GoogleTtsService;
+import com.interviewee.preinter.speech.WhisperSttService;
 import com.interviewee.preinter.speech.score.SpeakingMetricsService;
+import com.interviewee.preinter.speech.score.TranscriptionResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -23,7 +25,8 @@ public class InterviewController {
 
     private final InterviewService interviewService;
     private final GoogleTtsService ttsService;
-    private final GoogleSttService sttService;
+//    private final GoogleSttService sttService;
+    private final WhisperSttService sttService;
     private final SpeakingMetricsService speakingMetricsService;
 
     /** 1) 인터뷰 시작 */
@@ -87,13 +90,13 @@ public class InterviewController {
             @RequestPart("file") MultipartFile file
     ) throws IOException {
         // 1) STT: 음성 파일을 텍스트로 변환
-        String transcript = sttService.transcribe(file);
+        TranscriptionResult tr = sttService.transcribeWithTimestamps(file);
 
         // 1-2) 말하기 점수 추가
-        speakingMetricsService.computeAndStore(sessionId, file);
+        speakingMetricsService.computeAndStore(sessionId, tr);
 
         // 2) 인터뷰 서비스에 전달할 DTO 생성
-        SubmitAnswerRequest req = new SubmitAnswerRequest(sessionId, transcript);
+        SubmitAnswerRequest req = new SubmitAnswerRequest(sessionId, tr.transcript());
 
         // 3) 기존 로직 그대로 호출
         SubmitAnswerResponse resp = interviewService.submitAnswer(req);
