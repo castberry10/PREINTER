@@ -36,7 +36,14 @@ public class InterviewService {
 //        String rawTextData = documentService.extractText(req.getResumeFile());
         // 문자열 파싱
         InterviewSession session = new InterviewSession(sessionId, chatService.summarize(rawTextData));
-        repo.save(session);
+        System.out.println("summarized");
+        try {
+            repo.save(session);
+            System.out.println("redis saved");
+        } catch (Exception e) {
+            e.printStackTrace();                 // 또는 log.error("...", e)
+            throw e;
+        }
         return new StartInterviewResponse(sessionId);
     }
 

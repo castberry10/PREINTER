@@ -7,6 +7,7 @@ import com.interviewee.preinter.interview.InterviewService;
 import com.interviewee.preinter.speech.GoogleSttService;
 import com.interviewee.preinter.speech.GoogleTtsService;
 import com.interviewee.preinter.speech.WhisperSttService;
+import com.interviewee.preinter.speech.filler.FillerMetricsService;
 import com.interviewee.preinter.speech.score.SpeakingMetricsService;
 import com.interviewee.preinter.speech.score.TranscriptionResult;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ public class InterviewController {
 //    private final GoogleSttService sttService;
     private final WhisperSttService sttService;
     private final SpeakingMetricsService speakingMetricsService;
+    private final FillerMetricsService fillerMetricsService;
 
     /** 1) 인터뷰 시작 */
 //    @PostMapping(value = "/start", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -91,10 +93,12 @@ public class InterviewController {
     ) throws IOException {
         // 1) STT: 음성 파일을 텍스트로 변환
         TranscriptionResult tr = sttService.transcribeWithTimestamps(file);
-
+        System.out.println(tr.words());
+        System.out.println(tr.transcript());
         // 1-2) 말하기 점수 추가
         speakingMetricsService.computeAndStore(sessionId, tr);
-
+        // 1-3) 간투어
+        fillerMetricsService.computeAndStore(sessionId, tr);
         // 2) 인터뷰 서비스에 전달할 DTO 생성
         SubmitAnswerRequest req = new SubmitAnswerRequest(sessionId, tr.transcript());
 

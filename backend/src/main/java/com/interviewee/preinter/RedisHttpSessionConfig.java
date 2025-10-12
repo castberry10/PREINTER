@@ -14,7 +14,7 @@ public class RedisHttpSessionConfig {
     // 커스텀 RedisConnectionFactory를 쓰고 싶다면 빈으로 등록
     @Bean
     public LettuceConnectionFactory redisConnectionFactory() {
-        return new LettuceConnectionFactory("localhost", 6379);
+        return new LettuceConnectionFactory("preinter-redis", 6379);
     }
 
     // (필요시) Jackson 등으로 세션 직렬화 포맷 정의

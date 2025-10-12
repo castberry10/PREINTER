@@ -90,7 +90,7 @@ public class ChatService {
         ObjectMapper mapper = new ObjectMapper();
         String historyJson = mapper.writeValueAsString(historyWithRole);
 
-        // (신규) Redis에서 스피킹 지표 조회
+        // Redis 에서 속도/침묵 지표 조회
         var metrics = speakingMetricsService.getForEvaluation(session.getId());
         Map<String, Object> speaking = new LinkedHashMap<>();
         if (metrics == null) {
