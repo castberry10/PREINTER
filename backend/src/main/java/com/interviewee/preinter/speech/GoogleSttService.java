@@ -76,7 +76,7 @@ public class GoogleSttService {
             double dur = probeDurationSeconds(src);
             if (dur < MIN_DURATION_SECONDS) {
                 System.err.printf("[STT] Skip entire file: too short (%.2fs)%n", dur);
-                return new TranscriptionResult("", List.of());
+                return new TranscriptionResult("", List.of(), null);
             }
 
             // ② 58초 이하이면 단일 호출
@@ -120,7 +120,7 @@ public class GoogleSttService {
             // 만약 전부 스킵되었다면 빈 결과 반환
             if (futures.isEmpty()) {
                 System.err.println("[STT] All chunks skipped (too short/small).");
-                return new TranscriptionResult("", List.of());
+                return new TranscriptionResult("", List.of(), null);
             }
 
             for (int i = 0; i < futures.size(); i++) {
@@ -137,7 +137,7 @@ public class GoogleSttService {
                 }
             }
 
-            return new TranscriptionResult(fullText.toString(), fullWords);
+            return new TranscriptionResult(fullText.toString(), fullWords, null);
 
         } finally {
             // 임시파일 정리 (삭제 실패는 무시)
@@ -203,7 +203,7 @@ public class GoogleSttService {
                 words.add(new Word(wi.getWord(), start + baseOffsetSec, end + baseOffsetSec));
             }
         }
-        return new TranscriptionResult(text, words);
+        return new TranscriptionResult(text, words, null);
     }
 
     /** ffprobe 로 길이(초) 측정 */
