@@ -15,7 +15,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
-@Service
+//@Service
 public class GoogleSttService {
     private final SpeechClient speechClient;
 
