@@ -1,13 +1,18 @@
 package com.interviewee.preinter.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.interviewee.preinter.analytics.FillerFrequencyService;
+import com.interviewee.preinter.analytics.FillerPositionService;
+import com.interviewee.preinter.analytics.SttAnswerCollector;
+import com.interviewee.preinter.analytics.ThinkingTimeService;
+import com.interviewee.preinter.dto.AnalyticsResponse;
 import com.interviewee.preinter.dto.request.*;
 import com.interviewee.preinter.dto.response.*;
 import com.interviewee.preinter.interview.InterviewService;
-import com.interviewee.preinter.speech.GoogleSttService;
 import com.interviewee.preinter.speech.GoogleTtsService;
 import com.interviewee.preinter.speech.WhisperSttService;
 import com.interviewee.preinter.speech.filler.FillerMetricsService;
+import com.interviewee.preinter.speech.score.SpeakingMetrics;
 import com.interviewee.preinter.speech.score.SpeakingMetricsService;
 import com.interviewee.preinter.speech.score.TranscriptionResult;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +35,10 @@ public class InterviewController {
     private final WhisperSttService sttService;
     private final SpeakingMetricsService speakingMetricsService;
     private final FillerMetricsService fillerMetricsService;
+    private final SttAnswerCollector sttAnswerCollector;
+    private final ThinkingTimeService thinkingTimeService;
+    private final FillerFrequencyService fillerFrequencyService;
+    private final FillerPositionService fillerPositionService;
 
     /** 1) 인터뷰 시작 */
 //    @PostMapping(value = "/start", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -101,9 +110,11 @@ public class InterviewController {
         fillerMetricsService.computeAndStore(sessionId, tr);
         // 2) 인터뷰 서비스에 전달할 DTO 생성
         SubmitAnswerRequest req = new SubmitAnswerRequest(sessionId, tr.transcript());
-
-        // 3) 기존 로직 그대로 호출
+        // 3) Analytics를 위한 raw 데이터 저장
+        sttAnswerCollector.collect(sessionId, tr.wr());
+        // 4) Response
         SubmitAnswerResponse resp = interviewService.submitAnswer(req);
+
         return ResponseEntity.ok(resp);
     }
 
@@ -114,5 +125,37 @@ public class InterviewController {
     ) throws JsonProcessingException {
         GetResultResponse response = interviewService.getResult(request);
         return ResponseEntity.ok(response);
+    }
+
+    /** 4) Analytics 요청 */
+    @PostMapping("/analytics")
+    public ResponseEntity<AnalyticsResponse> getAnalyze(
+            @RequestParam("sessionId") String sessionId
+    ) {
+        // 1) 생각 시작 지연 요약
+        ThinkingTimeService.Result thinking = thinkingTimeService.compute(sessionId);
+
+        // 2) 간투사 위치 분석(문장 초/중/후반 등)
+        FillerPositionService.Result fillerPositions = fillerPositionService.compute(sessionId);
+
+        // 3) 간투사 빈도/상위 토큰 — 서비스 준비되면 주입해서 채우기
+        FillerFrequencyService.Result fillerFreq = fillerFrequencyService.compute(sessionId);
+
+        // 4) Top 단어 — 서비스 준비되면 주입해서 채우기
+        // TopWordsService.Result topWords = topWordsService.compute(sessionId);
+
+        // 5) 전체 발화 속도/침묵 요약 — 기존 SpeakingMetrics 재사용
+        // 한번 봐야함
+        double ar = speakingMetricsService.getForEvaluation(sessionId).articulationRate();
+
+        AnalyticsResponse resp = AnalyticsResponse.builder()
+                .sessionId(sessionId)
+                .thinkingTime(thinking)
+                .fillerPositions(fillerPositions)
+                .fillerFrequency(fillerFreq)
+                .topWords(null)        // TODO: 채우기
+                .AR(ar)
+                .build();
+        return ResponseEntity.ok(resp);
     }
 }

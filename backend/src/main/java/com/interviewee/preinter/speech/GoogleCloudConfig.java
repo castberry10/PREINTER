@@ -3,8 +3,8 @@ package com.interviewee.preinter.speech;
 import com.google.api.gax.core.CredentialsProvider;
 import com.google.api.gax.core.FixedCredentialsProvider;
 import com.google.auth.oauth2.GoogleCredentials;
-import com.google.cloud.speech.v1.SpeechClient;
-import com.google.cloud.speech.v1.SpeechSettings;
+import com.google.cloud.speech.v2.SpeechClient;
+import com.google.cloud.speech.v2.SpeechSettings;
 import com.google.cloud.texttospeech.v1.TextToSpeechClient;
 import com.google.cloud.texttospeech.v1.TextToSpeechSettings;
 import com.interviewee.preinter.SecretFetcher;
@@ -42,9 +42,13 @@ public class GoogleCloudConfig {
     }
 
     @Bean
-    public SpeechClient speechClient(CredentialsProvider credentialsProvider) throws IOException {
+    public SpeechClient speechClient(
+            CredentialsProvider credentialsProvider,
+            @Value("${gcp.speech.endpoint:us-central1-speech.googleapis.com:443}") String endpoint
+    ) throws IOException {
         SpeechSettings settings = SpeechSettings.newBuilder()
                 .setCredentialsProvider(credentialsProvider)
+                .setEndpoint(endpoint) // 예: us-central1-speech.googleapis.com:443
                 .build();
         return SpeechClient.create(settings);
     }

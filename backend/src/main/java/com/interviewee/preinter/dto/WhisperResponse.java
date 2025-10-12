@@ -31,7 +31,6 @@ public record WhisperResponse(
     public record Word(
             String word,
             Double start,
-            Double end,
-            Double probability
+            Double end
     ) {}
 }

@@ -33,8 +33,7 @@ public class WhisperSttService {
         this.webClient = builder.baseUrl(baseUrl).build();
     }
 
-    public String transcribe(MultipartFile audioFile) throws IOException {
-        WhisperResponse wr = callWhisper(audioFile);
+    public String transcribe(WhisperResponse wr) throws IOException {
         if (wr == null) return "";
 
         if (wr.text() != null && !wr.text().isBlank()) {
@@ -57,9 +56,9 @@ public class WhisperSttService {
 
     public TranscriptionResult transcribeWithTimestamps(MultipartFile audioFile) throws IOException {
         WhisperResponse wr = callWhisper(audioFile);
-        if (wr == null) return new TranscriptionResult("", List.of());
+        if (wr == null) return new TranscriptionResult("", List.of(), null);
 
-        String transcript = transcribe(audioFile); // 위 로직 재사용
+        String transcript = transcribe(wr); // 위 로직 재사용
 
         // words 생성 (간투어/추임새 그대로 보존)
         List<Word> words = new ArrayList<>();
@@ -75,7 +74,7 @@ public class WhisperSttService {
             }
         }
 
-        return new TranscriptionResult(transcript, words);
+        return new TranscriptionResult(transcript, words, wr);
     }
 
     private WhisperResponse callWhisper(MultipartFile audioFile) throws IOException {
