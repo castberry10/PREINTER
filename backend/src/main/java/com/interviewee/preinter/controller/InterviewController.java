@@ -6,6 +6,7 @@ import com.interviewee.preinter.analytics.FillerPositionService;
 import com.interviewee.preinter.analytics.SttAnswerCollector;
 import com.interviewee.preinter.analytics.ThinkingTimeService;
 import com.interviewee.preinter.dto.AnalyticsResponse;
+import com.interviewee.preinter.dto.ResearchAnalysisResponse;
 import com.interviewee.preinter.dto.request.*;
 import com.interviewee.preinter.dto.response.*;
 import com.interviewee.preinter.interview.InterviewService;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/interview")
@@ -129,7 +131,7 @@ public class InterviewController {
 
     /** 4) Analytics 요청 */
     @PostMapping("/analytics")
-    public ResponseEntity<AnalyticsResponse> getAnalyze(
+    public ResponseEntity<AnalyticsResponse> getAnalytics(
             @RequestParam("sessionId") String sessionId
     ) {
         // 1) 생각 시작 지연 요약
@@ -158,4 +160,48 @@ public class InterviewController {
                 .build();
         return ResponseEntity.ok(resp);
     }
+
+
+    /** 5) 연구용 */
+    @PostMapping("/analyze")
+    public ResponseEntity<ResearchAnalysisResponse> getAnalyze(
+            @RequestPart("file") MultipartFile file
+    ) throws IOException {
+
+        TranscriptionResult tr = sttService.transcribeWithTimestamps(file);
+        String sessionId = "exp:" + UUID.randomUUID();
+
+        sttAnswerCollector.collect(sessionId, tr.wr());
+        System.out.println(1);
+        // 1) 생각 시작 지연 요약
+        ThinkingTimeService.Result thinking = thinkingTimeService.compute(sessionId);
+        System.out.println(2);
+        // 2) 간투사 위치 분석(문장 초/중/후반 등)
+        FillerPositionService.Result fillerPositions = fillerPositionService.compute(sessionId);
+        System.out.println(3);
+        // 3) 간투사 빈도/상위 토큰 — 서비스 준비되면 주입해서 채우기
+        FillerFrequencyService.Result fillerFreq = fillerFrequencyService.compute(sessionId);
+        System.out.println(4);
+        // 4) Top 단어 — 서비스 준비되면 주입해서 채우기
+        // TopWordsService.Result topWords = topWordsService.compute(sessionId);
+
+        // 5) 전체 발화 속도/침묵 요약 — 기존 SpeakingMetrics 재사용
+        // 한번 봐야함
+        speakingMetricsService.computeAndStore(sessionId, tr);
+        System.out.println(5);
+        double ar = speakingMetricsService.getForEvaluation(sessionId).articulationRate();
+        System.out.println(6);
+
+        ResearchAnalysisResponse resp = ResearchAnalysisResponse.builder()
+                .sessionId(sessionId)
+                .tr(tr)
+                .thinkingTime(thinking)
+                .fillerPositions(fillerPositions)
+                .fillerFrequency(fillerFreq)
+                .topWords(null)        // TODO: 채우기
+                .AR(ar)
+                .build();
+        return ResponseEntity.ok(resp);
+    }
+
 }

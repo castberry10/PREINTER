@@ -95,10 +95,14 @@ public class SttAnswerCollector {
             Object v = redis.opsForHash().get(key, "questionNumber");
             if (v != null) return parseIntSafe(v.toString());
         }
+
         String s = redis.opsForValue().get("session:%s:questionNumber".formatted(sessionId));
         if (s != null) return parseIntSafe(s);
+
         System.err.printf("[SttAnswerCollector] questionNumber not found for session=%s%n", sessionId);
-        return -1;
+
+
+        return 1;
     }
 
     private static String buildTranscript(WhisperResponse wr) {

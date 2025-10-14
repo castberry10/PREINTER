@@ -52,6 +52,7 @@ public class ThinkingTimeService {
         return new Result(true, perAnswers.size(), r2(min), r2(max), r2(avg), perAnswers);
     }
 
+
     /* ---------------- 내부 로직 ---------------- */
 
     private double computeThinkingTimeForAnswer(List<Word> words) {
