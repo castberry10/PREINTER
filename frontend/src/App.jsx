@@ -16,7 +16,7 @@ import axios from 'axios';
 
 function App() {
   // axios.defaults.baseURL = "http://preinter.castberry.kr:8443/api";
-  axios.defaults.baseURL = "https://aoaoaoqq.com:8443/api";
+  axios.defaults.baseURL = "http://aoaoaoqq.com:8080/api";
   // axios.defaults.baseURL = "http://aoaoaoqq.com:8443/api";
   // axios.defaults.withCredentials = true;
   return (

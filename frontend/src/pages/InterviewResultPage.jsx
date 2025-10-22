@@ -133,6 +133,11 @@ export default function InterviewResultPage() {
         const { data } = await axios.post("/interview/result", { sessionId });
 
         const parsed = JSON.parse(data.evaluationSummary || "{}");
+
+        const { data2 } = await axios.post("/interview/analytics", { sessionId });
+
+        const parsed2 = JSON.parse(data2.evaluationSummary || "{}");
+        console.log("Second fetch:", parsed2);
         setSummary(parsed);                    
       } catch (e) {
         console.error(e);
