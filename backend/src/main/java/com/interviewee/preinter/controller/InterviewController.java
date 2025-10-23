@@ -5,6 +5,7 @@ import com.interviewee.preinter.analytics.FillerFrequencyService;
 import com.interviewee.preinter.analytics.FillerPositionService;
 import com.interviewee.preinter.analytics.SttAnswerCollector;
 import com.interviewee.preinter.analytics.ThinkingTimeService;
+import com.interviewee.preinter.dto.AnalyticsRequest;
 import com.interviewee.preinter.dto.AnalyticsResponse;
 import com.interviewee.preinter.dto.ResearchAnalysisResponse;
 import com.interviewee.preinter.dto.request.*;
@@ -132,8 +133,10 @@ public class InterviewController {
     /** 4) Analytics 요청 */
     @PostMapping("/analytics")
     public ResponseEntity<AnalyticsResponse> getAnalytics(
-            @RequestParam("sessionId") String sessionId
+            @RequestBody AnalyticsRequest request
     ) {
+        String sessionId = request.getSessionId();
+        System.out.println("b1");
         // 1) 생각 시작 지연 요약
         ThinkingTimeService.Result thinking = thinkingTimeService.compute(sessionId);
         System.out.println("b2");
