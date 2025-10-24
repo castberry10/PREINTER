@@ -134,11 +134,11 @@ export default function InterviewResultPage() {
 
         const parsed = JSON.parse(data.evaluationSummary || "{}");
 
-        const { data2 } = await axios.post("/interview/analytics", { sessionId });
+        const a = await axios.post("/interview/analytics", { sessionId });
 
-        const parsed2 = JSON.parse(data2.evaluationSummary || "{}");
-        console.log("Second fetch:", parsed2);
-        setSummary(parsed);                    
+        //const parsed= JSON.parse(data2.evaluationSummary || "{}");
+        console.log("Second fetch:", a);
+        setSummary(parsed);
       } catch (e) {
         console.error(e);
         alert("결과를 가져오지 못했습니다.");
