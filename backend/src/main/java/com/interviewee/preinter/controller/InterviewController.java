@@ -5,6 +5,7 @@ import com.interviewee.preinter.analytics.FillerFrequencyService;
 import com.interviewee.preinter.analytics.FillerPositionService;
 import com.interviewee.preinter.analytics.SttAnswerCollector;
 import com.interviewee.preinter.analytics.ThinkingTimeService;
+import com.interviewee.preinter.dto.AnalyticsRequest;
 import com.interviewee.preinter.dto.AnalyticsResponse;
 import com.interviewee.preinter.dto.ResearchAnalysisResponse;
 import com.interviewee.preinter.dto.request.*;
@@ -132,24 +133,26 @@ public class InterviewController {
     /** 4) Analytics 요청 */
     @PostMapping("/analytics")
     public ResponseEntity<AnalyticsResponse> getAnalytics(
-            @RequestParam("sessionId") String sessionId
+            @RequestBody AnalyticsRequest request
     ) {
+        String sessionId = request.getSessionId();
+        System.out.println("b1");
         // 1) 생각 시작 지연 요약
         ThinkingTimeService.Result thinking = thinkingTimeService.compute(sessionId);
-
+        System.out.println("b2");
         // 2) 간투사 위치 분석(문장 초/중/후반 등)
         FillerPositionService.Result fillerPositions = fillerPositionService.compute(sessionId);
-
+        System.out.println("b3");
         // 3) 간투사 빈도/상위 토큰 — 서비스 준비되면 주입해서 채우기
         FillerFrequencyService.Result fillerFreq = fillerFrequencyService.compute(sessionId);
-
+        System.out.println("b4");
         // 4) Top 단어 — 서비스 준비되면 주입해서 채우기
         // TopWordsService.Result topWords = topWordsService.compute(sessionId);
 
         // 5) 전체 발화 속도/침묵 요약 — 기존 SpeakingMetrics 재사용
         // 한번 봐야함
         double ar = speakingMetricsService.getForEvaluation(sessionId).articulationRate();
-
+        System.out.println("b5");
         AnalyticsResponse resp = AnalyticsResponse.builder()
                 .sessionId(sessionId)
                 .thinkingTime(thinking)
@@ -172,25 +175,25 @@ public class InterviewController {
         String sessionId = "exp:" + UUID.randomUUID();
 
         sttAnswerCollector.collect(sessionId, tr.wr());
-        System.out.println(1);
+        System.out.println("a1");
         // 1) 생각 시작 지연 요약
         ThinkingTimeService.Result thinking = thinkingTimeService.compute(sessionId);
-        System.out.println(2);
+        System.out.println("a2");
         // 2) 간투사 위치 분석(문장 초/중/후반 등)
         FillerPositionService.Result fillerPositions = fillerPositionService.compute(sessionId);
-        System.out.println(3);
+        System.out.println("a3");
         // 3) 간투사 빈도/상위 토큰 — 서비스 준비되면 주입해서 채우기
         FillerFrequencyService.Result fillerFreq = fillerFrequencyService.compute(sessionId);
-        System.out.println(4);
+        System.out.println("a4");
         // 4) Top 단어 — 서비스 준비되면 주입해서 채우기
         // TopWordsService.Result topWords = topWordsService.compute(sessionId);
 
         // 5) 전체 발화 속도/침묵 요약 — 기존 SpeakingMetrics 재사용
         // 한번 봐야함
         speakingMetricsService.computeAndStore(sessionId, tr);
-        System.out.println(5);
+        System.out.println("a5");
         double ar = speakingMetricsService.getForEvaluation(sessionId).articulationRate();
-        System.out.println(6);
+        System.out.println("a6");
 
         ResearchAnalysisResponse resp = ResearchAnalysisResponse.builder()
                 .sessionId(sessionId)
