@@ -1,11 +1,12 @@
-import React, { useEffect, useState,useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Sparkles, PlayCircle } from 'lucide-react';
-import { motion, AnimatePresence  } from 'framer-motion';
-import axios from 'axios';
+import { motion } from 'framer-motion';
+// import axios from 'axios';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+
 const drift = keyframes`
   0% {background-position:0% 50%;}
   50% {background-position:100% 50%;}
@@ -68,6 +69,28 @@ const Wrapper = styled.main`
   .actions{display:flex;justify-content:center;gap:1.5rem;margin-top:1rem;
     button{background:#f8fafc;color:#4f46e5;padding:.6rem 1.5rem;border:none;border-radius:1rem;font-weight:600;cursor:pointer;}
   }
+
+  /* ====== 화면 전용 분석 섹션 스타일 ====== */
+  .analysis { display:grid; gap:1.25rem; }
+  .mini-cards {
+    display:grid; gap:1rem;
+    grid-template-columns: 1fr;
+    @media(min-width:768px){ grid-template-columns: repeat(3, 1fr); }
+  }
+  .mini-card {
+    background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:1rem; padding:1rem;
+  }
+  .mini-card h3 { margin:0 0 .5rem; font-size:1rem; font-weight:700; color:#e5e7eb; }
+  .kv { display:flex; justify-content:space-between; font-size:.95rem; margin:.25rem 0; }
+  .subtle { color:#cbd5e1; font-size:.9rem; }
+  .tag {
+    display:inline-flex; align-items:center; gap:.3rem;
+    padding:.25rem .5rem; border-radius:.5rem; font-size:.8rem;
+    background:rgba(255,255,255,.08); color:#f1f5f9;
+  }
+  .list { display:flex; flex-wrap:wrap; gap:.4rem; margin-top:.35rem; }
 `;
 
 const spin = keyframes`
@@ -86,7 +109,7 @@ const LoaderOverlay = styled(motion.div)`
   backdrop-filter: blur(3px);
   color: #f1f5f9;
   font-size: 0.95rem;
-  z-index: 9999;      /* 화면 맨 위 */
+  z-index: 9999;
 `;
 
 const Spinner = styled.div`
@@ -98,9 +121,8 @@ const Spinner = styled.div`
   animation: ${spin} 0.8s linear infinite;
 `;
 
-
 const Printable = styled.div`
-  position: absolute; left: -99999px; top: 0; /* 화면에 보이지 않게 */
+  position: absolute; left: -99999px; top: 0;
   width: 800px; background: #ffffff; color: #0f172a; padding: 40px;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, 'Noto Sans', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
 
@@ -116,29 +138,100 @@ const Printable = styled.div`
   .section { margin-top: 18px; line-height: 1.65; font-size: 13px; white-space: pre-wrap; text-align: left; }
   .chartWrap { width: 360px; height: 360px; }
 `;
+
+/* 더미 요약 */
+const DUMMY_SUMMARY = {
+  "면접결과": "합격 유력",
+  "면접관의 평가": "핵심 역량에 대한 이해가 높고, 답변 구조가 명확합니다. 지원 직무와의 연관성을 잘 설명했습니다.",
+  "면접관의 피드백": "예시가 아주 좋았습니다. 다만, 성능 최적화 파트에서 수치(지연시간, 메모리 사용량 등)를 더 구체적으로 제시하면 설득력이 올라갑니다.",
+  "면접관의 면접 팁": "STAR 기법(상황-과제-행동-결과)으로 사례를 정리하고, 예상 꼬리질문에 대한 짧은 백업 근거를 준비하세요.",
+  "면접관의 점수": 87,
+  "면접관의 상세 점수": {
+    "문제해결력": 90,
+    "커뮤니케이션": 82,
+    "논리성": 85,
+    "태도/매너": 88,
+    "직무지식": 84
+  }
+};
+
+/* 화면 전용 분석 메트릭 — PDF에는 미포함 */
+const DUMMY_METRICS = {
+  "sessionId": "exp:b1b98d8e-9db7-44f0-9ef8-a6dfbd67b46a",
+  "thinkingTime": {
+    "available": true,
+    "answerCount": 1,
+    "minSec": 2.14,
+    "maxSec": 2.14,
+    "avgSec": 2.14,
+    "perAnswers": [
+      {
+        "questionNumber": 1,
+        "thinkingSec": 2.14
+      }
+    ]
+  },
+  "fillerPositions": {
+    "total": 5,
+    "beginCount": 2,
+    "middleCount": 3,
+    "endCount": 0
+  },
+  "fillerFrequency": {
+    "totalCount": 10,
+    "topFillers": [
+      { "token": "아", "count": 4 },
+      { "token": "음", "count": 4 },
+      { "token": "어", "count": 2 }
+    ],
+    "ratios": {
+      "어": 20.0,
+      "아": 40.0,
+      "음": 40.0
+    },
+    /* 추가: 단일/복합 간투사 통계와 예시 */
+    "singleCount": 6,
+    "compoundCount": 4,
+    "examples": {
+      "single": ["음", "어", "아", "그", "저"],
+      // “복합”은 1초 이내 연속·결합된 간투사(공백·말줄임 포함) 예시
+      "compound": ["음… 그러니까", "어…음", "그… 뭐랄까", "아… 네"]
+    }
+  },
+  "topWords": null,
+  "AR": 2.4630541871921188
+};
+
 export default function InterviewResultPage() {
   const navigate = useNavigate();
   const { sessionId } = useParams();
+  const safeSessionId = sessionId || 'DEMO-SESSION-001';
 
-  const [summary, setSummary] = useState(null);  
+  const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const [exporting, setExporting] = useState(false);
   const pdfTopRef = useRef(null);
   const pdfBottomRef = useRef(null);
 
+  /* 화면 전용 메트릭 상태 */
+  const [metrics, setMetrics] = useState(null);
+
   useEffect(() => {
+    /* 데모 모드: API 호출 대신 더미 데이터 사용 */
+    setSummary(DUMMY_SUMMARY);
+    setMetrics(DUMMY_METRICS);
+    setLoading(false);
+
+    /* 실제 API 모드 예시
     (async () => {
       try {
         const { data } = await axios.post("/interview/result", { sessionId });
-
         const parsed = JSON.parse(data.evaluationSummary || "{}");
-
-        const a = await axios.post("/interview/analytics", { sessionId });
-
-        //const parsed= JSON.parse(data2.evaluationSummary || "{}");
-        console.log("Second fetch:", a);
         setSummary(parsed);
+
+        const { data: m } = await axios.post("/interview/metrics", { sessionId });
+        setMetrics(m);
       } catch (e) {
         console.error(e);
         alert("결과를 가져오지 못했습니다.");
@@ -147,7 +240,8 @@ export default function InterviewResultPage() {
         setLoading(false);
       }
     })();
-  }, [sessionId, navigate]);
+    */
+  }, []);
 
   if (loading || !summary)
     return (
@@ -165,6 +259,7 @@ export default function InterviewResultPage() {
   const tip          = summary["면접관의 면접 팁"] ?? "";
   const score        = summary["면접관의 점수"] ?? 0;
   const detailScores = summary["면접관의 상세 점수"] ?? {};
+
   const handleExportPDF = async () => {
     try {
       setExporting(true);
@@ -218,8 +313,6 @@ export default function InterviewResultPage() {
         bottomImg.src = imgBottom;
       });
 
-
-
       const pages = doc.getNumberOfPages();
 
       const makeWatermarkDataURL = (text) => {
@@ -236,7 +329,7 @@ export default function InterviewResultPage() {
         ctx.rotate(angle);
 
         ctx.font = 'normal 30px Helvetica, Arial, sans-serif';
-        ctx.fillStyle = 'rgba(150,150,150,0.15)'; 
+        ctx.fillStyle = 'rgba(150,150,150,0.15)';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(text, 0, 0);
@@ -245,8 +338,8 @@ export default function InterviewResultPage() {
         return canvas.toDataURL('image/png');
       };
       const makeWatermarkDataURL2 = (text = 'PREINTER') => {
-        const size = 500; 
-        const angle = -Math.PI / 4; 
+        const size = 500;
+        const angle = -Math.PI / 4;
         const canvas = document.createElement('canvas');
         canvas.width = size;
         canvas.height = size;
@@ -257,9 +350,8 @@ export default function InterviewResultPage() {
         ctx.translate(size / 2, size / 2);
         ctx.rotate(angle);
 
-
         ctx.font = 'normal 120px Helvetica, Arial, sans-serif';
-        ctx.fillStyle = 'rgba(150,150,150,0.15)'; 
+        ctx.fillStyle = 'rgba(150,150,150,0.15)';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(text, 0, 0);
@@ -267,11 +359,11 @@ export default function InterviewResultPage() {
 
         return canvas.toDataURL('image/png');
       };
-      const watermarkUrl = makeWatermarkDataURL(sessionId);
+      const watermarkUrl = makeWatermarkDataURL(safeSessionId);
       const watermarkUrl2 = makeWatermarkDataURL2('PREINTER');
       for (let i = 1; i <= pages; i++) {
         doc.setPage(i);
-        const wmWidth = pageWidth * 0.6;               
+        const wmWidth = pageWidth * 0.6;
         const img = new Image();
         await new Promise((resolve) => {
           img.onload = () => {
@@ -291,7 +383,7 @@ export default function InterviewResultPage() {
         doc.text(`Page ${i} / ${pages}`, pageWidth / 2, pageHeight - 6, { align: 'center' });
      }
 
-      const filename = `PREINTER_${sessionId}_면접결과.pdf`;
+      const filename = `PREINTER_${safeSessionId}_면접결과.pdf`;
       doc.save(filename);
     } catch (err) {
       console.error(err);
@@ -300,6 +392,7 @@ export default function InterviewResultPage() {
       setExporting(false);
     }
   };
+
   return (
     <Wrapper>
       <header>
@@ -373,6 +466,118 @@ export default function InterviewResultPage() {
           </svg>
         </div>
 
+        {/* 화면 전용 발화/간투사 분석 섹션 (PDF 미포함) */}
+        {metrics && (
+          <section className="analysis">
+            <h2>발화 패턴 분석</h2>
+
+            <div className="mini-cards">
+              {/* 1) 생각 시간(Thinking Time) */}
+              <div className="mini-card">
+                <h3>생각 시간</h3>
+                <div className="kv"><span>답변 개수</span><span>{metrics.thinkingTime?.answerCount ?? 0} 개</span></div>
+                <div className="kv"><span>평균</span><span>{(metrics.thinkingTime?.avgSec ?? 0).toFixed(2)} s</span></div>
+                <div className="kv"><span>최소 ~ 최대</span><span>{(metrics.thinkingTime?.minSec ?? 0).toFixed(2)} ~ {(metrics.thinkingTime?.maxSec ?? 0).toFixed(2)} s</span></div>
+                {Array.isArray(metrics.thinkingTime?.perAnswers) && metrics.thinkingTime.perAnswers.length > 0 && (
+                  <>
+                    <div className="subtle" style={{marginTop:'.5rem'}}>질문별</div>
+                    <div className="list">
+                      {metrics.thinkingTime.perAnswers.map((p) => (
+                        <span key={p.questionNumber} className="tag">Q{p.questionNumber}("지원 동기가 무엇인가요?"): {p.thinkingSec.toFixed(2)}s</span>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* 2) 간투사 위치(Positions) */}
+              <div className="mini-card">
+                <h3>간투사 위치</h3>
+                <div className="kv"><span>총 발생</span><span>{metrics.fillerPositions?.total ?? 0} 회</span></div>
+                <div className="kv"><span>초반</span><span>{metrics.fillerPositions?.beginCount ?? 0} 회</span></div>
+                <div className="kv"><span>중반</span><span>{metrics.fillerPositions?.middleCount ?? 0} 회</span></div>
+                <div className="kv"><span>후반</span><span>{metrics.fillerPositions?.endCount ?? 0} 회</span></div>
+              </div>
+
+              {/* 3) 간투사 빈도(Frequency) */}
+              <div className="mini-card">
+                <h3>간투사 빈도</h3>
+                <div className="kv"><span>총 개수</span><span>{metrics.fillerFrequency?.totalCount ?? 0} 개</span></div>
+
+                {Array.isArray(metrics.fillerFrequency?.topFillers) && metrics.fillerFrequency.topFillers.length > 0 && (
+                  <>
+                    <div className="subtle" style={{marginTop:'.5rem'}}>상위 토큰</div>
+                    <div className="list">
+                      {metrics.fillerFrequency.topFillers.map((t) => (
+                        <span key={t.token} className="tag">{t.token} × {t.count}</span>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {metrics.fillerFrequency?.ratios && (
+                  <>
+                    <div className="subtle" style={{marginTop:'.5rem'}}>비율(%)</div>
+                    <div className="list">
+                      {Object.entries(metrics.fillerFrequency.ratios).map(([tok, pct]) => (
+                        <span key={tok} className="tag">{tok}: {Number(pct).toFixed(1)}%</span>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {/* 추가: 단일/복합 간투사 집계 */}
+                {(typeof metrics.fillerFrequency?.singleCount === 'number' ||
+                  typeof metrics.fillerFrequency?.compoundCount === 'number') && (
+                  <>
+                    <div className="subtle" style={{marginTop:'.6rem'}}>세부 집계</div>
+                    <div className="kv"><span>단일 간투사</span><span>{metrics.fillerFrequency?.singleCount ?? 0} 회</span></div>
+                    <div className="kv"><span>복합 간투사</span><span>{metrics.fillerFrequency?.compoundCount ?? 0} 회</span></div>
+                  </>
+                )}
+
+                {/* 추가: 단일/복합 예시 뱃지 */}
+                {metrics.fillerFrequency?.examples && (
+                  <>
+                    {Array.isArray(metrics.fillerFrequency.examples.single) && metrics.fillerFrequency.examples.single.length > 0 && (
+                      <>
+                        <div className="subtle" style={{marginTop:'.6rem'}}>단일 간투사 예시</div>
+                        <div className="list">
+                          {metrics.fillerFrequency.examples.single.map((ex, i) => (
+                            <span key={`single-${i}`} className="tag">{ex}</span>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                    {Array.isArray(metrics.fillerFrequency.examples.compound) && metrics.fillerFrequency.examples.compound.length > 0 && (
+                      <>
+                        <div className="subtle" style={{marginTop:'.6rem'}}>복합 간투사 예시</div>
+                        <div className="list">
+                          {metrics.fillerFrequency.examples.compound.map((ex, i) => (
+                            <span key={`compound-${i}`} className="tag">{ex}</span>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* 4) 발화 속도(AR) */}
+            <div className="mini-card" style={{marginTop:'.25rem'}}>
+              <h3>발화 속도</h3>
+              <div className="kv">
+                <span>AR (침묵 제외 초당 음절)</span>
+                <span>{(metrics.AR ?? 0).toFixed(3)} syl/s</span>
+              </div>
+              <div className="subtle" style={{marginTop:'.35rem'}}>
+                * AR은 침묵 구간을 제외하고 초당 말한 음절 수를 의미합니다.
+              </div>
+            </div>
+          </section>
+        )}
+
         <div className="feedback-block">
           <p>
             <strong>면접관의 평가</strong>
@@ -393,7 +598,7 @@ export default function InterviewResultPage() {
 
         <div className="actions">
           <button onClick={() => navigate("/")}>홈으로</button>
-          <button onClick={() => navigate(`/interview/${sessionId}/replay`)}>
+          <button onClick={() => navigate(`/interview/${safeSessionId}/replay`)}>
             리플레이
           </button>
           <button onClick={handleExportPDF} disabled={exporting}>
@@ -401,11 +606,13 @@ export default function InterviewResultPage() {
           </button>
         </div>
       </motion.section>
+
+      {/* ====== PDF 영역: 수정 없음 ====== */}
       <Printable aria-hidden>
         <div ref={pdfTopRef}>
           <h1>PREINTER 면접 결과 리포트</h1>
           <div className="meta">
-            세션 ID: {sessionId} · 생성일시: {new Date().toLocaleString('ko-KR')}
+            세션 ID: {safeSessionId} · 생성일시: {new Date().toLocaleString('ko-KR')}
           </div>
 
           <div className="row">
@@ -489,7 +696,6 @@ export default function InterviewResultPage() {
 
           <h2>면접관의 피드백</h2>
           <div className="section">{feedback}</div>
-
         </div>
       </Printable>
 
@@ -506,7 +712,7 @@ export default function InterviewResultPage() {
 function getPolygonPoints(scores, radius = 140, cx = 200, cy = 200) {
   const entries = Object.entries(scores);
   return entries
-    .map(([_, v], i) => {
+    .map(([, v], i) => {
       const angle = (2 * Math.PI * i) / entries.length - Math.PI / 2;
       const r = (Number(v) / 100) * radius;
       return `${cx + Math.cos(angle) * r},${cy + Math.sin(angle) * r}`;
